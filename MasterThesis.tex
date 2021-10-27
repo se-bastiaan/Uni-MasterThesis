@@ -1,0 +1,100 @@
+\documentclass[11pt,a4paper]{report}
+
+\PassOptionsToPackage{dvipsnames}{xcolor}
+
+\usepackage{url}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage[all]{xy}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[a4paper]{geometry}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{xargs}
+
+%
+\newcommandx{\unsure}[2][1=]{\todo[linecolor=red,backgroundcolor=red!25,bordercolor=red,#1]{#2}}
+\newcommandx{\change}[2][1=]{\todo[linecolor=blue,backgroundcolor=blue!25,bordercolor=blue,#1]{#2}}
+\newcommandx{\info}[2][1=]{\todo[linecolor=OliveGreen,backgroundcolor=OliveGreen!25,bordercolor=OliveGreen,#1]{#2}}
+\newcommandx{\improvement}[2][1=]{\todo[linecolor=Plum,backgroundcolor=Plum!25,bordercolor=Plum,#1]{#2}}
+\newcommandx{\thiswillnotshow}[2][1=]{\todo[disable,#1]{#2}}
+%
+
+\makeatletter %otherwise geometry resets everything
+\Gm@restore@org
+\makeatother
+
+\setlength{\itemsep}{0cm}
+\setlength{\voffset}{0cm}
+\setlength{\headheight}{0cm}
+\setlength{\topmargin}{0cm}
+\setlength{\extrarowheight}{3pt} %for superscripts in tabular
+\setlength{\arraycolsep}{4pt}
+\lstset{basicstyle = \footnotesize, breaklines = true}
+
+\graphicspath{{imgs/}}
+
+\begin{document}
+\begin{titlepage}
+\begin{center}
+\textsc{\LARGE Master thesis\\Data Science}[1.5cm]
+\includegraphics[height=100pt]{logo}
+
+\vspace{0.4cm}
+\textsc{\Large Radboud University}[1cm]
+\hrule
+\vspace{0.4cm}
+\textbf{\huge Using fast inpainting transformers for anomaly detection\\[0.3cm]
+\LARGE  
+}[0.4cm]
+\hrule
+\vspace{2cm}
+\begin{minipage}[t]{0.45\textwidth}
+\begin{flushleft} \large
+\textit{Author:}\\
+Sébastiaan Versteeg, BSc\\
+\texttt{hello@sebastiaan.app}
+\end{flushleft}
+\end{minipage}
+\begin{minipage}[t]{0.45\textwidth}
+\begin{flushright} \large
+\textit{First supervisor:}\\
+Prof.dr. E Marchiori\\
+\texttt{elenam@cs.ru.nl}\\[1.3cm]
+\textit{Second assessor:}\\
+Firstname Lastname\\
+\texttt{email@example.com}
+\end{flushright}
+\end{minipage}
+\vfill
+{\large \today}
+\end{center}
+\end{titlepage}
+
+\input{content/abstract}
+\input{content/acknowledgements}
+\tableofcontents
+
+\input{content/introduction}
+\input{content/preliminaries}
+\input{content/relatedwork}
+\input{content/approach}
+\input{content/results}
+\input{content/conclusions}
+
+\bibliographystyle{acm}
+\bibliography{references}
+
+\appendix
+\input{content/appendix}
+
+\newpage
+\listoftodos[Notes]
+
+\end{document}
