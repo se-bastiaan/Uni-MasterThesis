@@ -45,7 +45,7 @@ The encoder takes an input representation $(x_1,...x_n)$ and transforms this to 
 \begin{figure}[h]
 \caption{The original transformer architecture from \cite{vaswani_attention_2017}}
 \centering
-\includegraphics[width=0.5\textwidth]{../imgs/transformer.png}
+\includegraphics[width=0.5\textwidth]{transformer.png}
 \label{fig:transformer-architecture}
 \end{figure}
 
@@ -76,28 +76,25 @@ The attention mechanism from \cite{vaswani_attention_2017} is called 'Scaled Dot
 &Attention(Q, K, V) = softmax(\frac{QK^T} {sqrt(d_k)})V
 \end{align*}
 
-To be able to apply the attention to more than one representation space we use multi-headed attention. This uses $h$ parallel layers that all attend to a smaller part of the full dimension. In the case of the original papers $h = 8$ and the dimension of each attention head becomes $d_k = d_v = d_model / h = 64$. This makes the multi-headed attention similar to single-head attention with the full dimension when we look at the computational cost.
+To be able to apply the attention to more than one representation space we use multi-headed attention. This uses $h$ parallel layers that all attend to a smaller part of the full dimension. In the case of the original papers $h = 8$ and the dimension of each attention head becomes $d_k = d_v = d_{model} / h = 64$. This makes the multi-headed attention similar to single-head attention with the full dimension when we look at the computational cost.
 
 To do this we learn different linear projections that we project all queries, keys and values to.  All the separate outputs of the different attention heads are concatenated and projected which gives us the final output.
 
 \begin{align*}
-&MultiHead(Q, K, V) = Concat(head_1, ..., head_h)W^O
-& where head_i = Attention(QW_i^Q, KW_i^K, VW_i^V
+&MultiHead(Q, K, V) = Concat(head_1, ..., head_h)W^O\\
+& where\ head_i = Attention(QW_i^Q, KW_i^K, VW_i^V)
 \end{align*}
 
 
 \subsection{Vision transformers}
 
-\cite{dosovitskiy_image_2021}
+As mentioned in the previous section transformers were originally meant for translation tasks. The success of the transformer in that context is what made Dosovitskiy et al.\cite{dosovitskiy_image_2021} start exploring the usage of the attention-based model for computer vision tasks as well.
 
-Transformers can be used for images too
+Their approach tries to use the original transformer implementation as much as possible. This means that they had to introduce an intermediate step to be able to use the images as input for the model.
 
-to input the images we reshape the images into flattened 2 patches
-so we go from 
+The original model is designed to receive a 1D input of token embeddings. The images are 2D and each image has the shape $x \in \mathbb{R}^{HxWxC}$ where $H$ and $W$ are the height and width of the image respectively and $C$ is the number of channels. To be able to use the images as input they split the image in square patches with the resolution $(P, P)$. This results in $N = HW/P^2$ patches $x_p \in \mathbb{R}^{N \times (P^2 \cdot C)}$.
 
-$x < R^HxWxC to x_p < R^N x (P^2.C)$ where $(H, W)$ is the resolution of the image, $C$ is the number of channels and $(P,P)$ is the patch resolution
-and $N = HW/P^2$ the number of patches
-
+Since the transformer uses the same dimensions in all layers flattening the patches and mapping them to the dimension by training a linear projection which gives us our patch embeddings. To this sequence of patch embeddings a learnable embedding is prepended. To be able to preserve the positions of the patches they add positional embeddings to the patch embeddings.
 
 \subsection{Linear transformers}
 
