@@ -1,0 +1,8 @@
+mvtec-ad/
+.venv/
+checkpoints/
+mlruns/
+logs/
+default/
+.idea/
+__pycache__/
