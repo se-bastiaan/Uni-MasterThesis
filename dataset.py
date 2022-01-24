@@ -68,9 +68,9 @@ class MVTecAD(data.Dataset):
         """
         Source: https://github.com/uzl/inpainting-transformer/blob/master/inpainting_transformer_base.py
         It will make K by K fixed patchs from an image.
-        Then it will randomly choose square grid of L by L patchs.
-        One patch from L by L patches will be used as inpaint patch. (This one we want to produce from model)
-        Remaining patchs will be feed as input of the model.
+        Then it will randomly choose square grid of L by L patches.
+        One patch from L by L patches will be used as inpainting patch. (This one we want to produce from model)
+        Remaining patches will be feed as input of the model.
         An example:
             for image shape (3, 384, 384),
             the main output will be (others positional information is not shown here):
@@ -84,12 +84,12 @@ class MVTecAD(data.Dataset):
             K (int): Patch size.
                 For example, if we want to want to make a 16*16 pixel patch,
                 then k=16.
-            L (int): Subgrid arm length. We we want to take 7*7 patchs from all M*N patches,
+            L (int): Subgrid arm length. We we want to take 7*7 patches from all M*N patches,
                 then L=7
             r (int): top position of (r, s) pair of subgrid start patch
             s (int): right position of (r, s) pair of subgrid start patch
-            t (int): Local top position of (t, u) pair of inpaint patch
-            u (int): Local top position of (t, u) pair of inpaint patch
+            t (int): Local top position of (t, u) pair of inpainting patch
+            u (int): Local top position of (t, u) pair of inpaint pingatch
 
             For more details of (r, s) and (t, u) pairs, please see section-3.1 of the paper.
         """
@@ -221,12 +221,18 @@ class MVTecADDataModule(LightningDataModule):
             train_image_list
         )
 
+        print('Amount of train images in dataset: ', len(train_image_list))
+        print('Amount of train masks in dataset: ', len(train_mask_list))
+
         val_image_list = train_image_list[
             int(len(train_image_list) * self.train_ratio) :
         ]
         val_mask_list = [(np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)] * len(
             val_image_list
         )
+
+        print('Amount of val images in dataset: ', len(val_image_list))
+        print('Amount of val masks in dataset: ', len(val_mask_list))
 
         self.train_dataset = MVTecAD(
             self.patch_size,

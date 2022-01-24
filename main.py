@@ -44,9 +44,9 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser = pl.Trainer.add_argparse_args(parser)  # add built-in Trainer args
-    parser.add_argument("--image_type", type=str, default="bottle")
+    parser.add_argument("--image_type", type=str, default="wood")
     parser.add_argument("--dataset", type=str, default="./mvted-ad/")
-    parser.add_argument("--image_size", type=int, default=256)
+    parser.add_argument("--image_size", type=int, default=512)
     parser.add_argument("--patch_size", type=int, default=16)
     parser.add_argument("--window_size", type=int, default=7)
     parser.add_argument("--image_channels", type=int, default=3)
