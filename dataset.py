@@ -187,19 +187,9 @@ class MVTecADDataModule(LightningDataModule):
         train_image_list = self._get_image_list(train_imgdir)
         random.shuffle(train_image_list)
 
-        train_size = len(train_image_list) - max(
+        train_size = len(train_image_list) - min(
             20, int(len(train_image_list) * (1 - self.train_ratio))
         )
-
-        print(train_size)
-
-        train_image_list = train_image_list[:train_size]
-        train_mask_list = [
-            (np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
-        ] * len(train_image_list)
-
-        print("Amount of train images in dataset: ", len(train_image_list))
-        print("Amount of train masks in dataset: ", len(train_mask_list))
 
         val_image_list = train_image_list[train_size:]
         val_mask_list = [
@@ -208,6 +198,14 @@ class MVTecADDataModule(LightningDataModule):
 
         print("Amount of val images in dataset: ", len(val_image_list))
         print("Amount of val masks in dataset: ", len(val_mask_list))
+
+        train_image_list = train_image_list[:train_size]
+        train_mask_list = [
+            (np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
+        ] * len(train_image_list)
+
+        print("Amount of train images in dataset: ", len(train_image_list))
+        print("Amount of train masks in dataset: ", len(train_mask_list))
 
         self.train_dataset = MVTecAD(
             self.patch_size,
