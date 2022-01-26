@@ -19,9 +19,13 @@ class SSIMLoss(Module):
         super().__init__()
         self.kernel_size = kernel_size
         self.sigma = sigma
-        self.gaussian_kernel = self._create_gaussian_kernel(self.kernel_size, self.sigma)
+        self.gaussian_kernel = self._create_gaussian_kernel(
+            self.kernel_size, self.sigma
+        )
 
-    def forward(self, x: Tensor, y: Tensor, as_loss: bool = True) -> Tuple[Tensor, Tensor]:
+    def forward(
+        self, x: Tensor, y: Tensor, as_loss: bool = True
+    ) -> Tuple[Tensor, Tensor]:
 
         if not self.gaussian_kernel.is_cuda:
             self.gaussian_kernel = self.gaussian_kernel.to(x.device)
@@ -37,9 +41,15 @@ class SSIMLoss(Module):
         uy = F.conv2d(y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=3)
 
         # Compute variances
-        uxx = F.conv2d(x * x, self.gaussian_kernel, padding=self.kernel_size // 2, groups=3)
-        uyy = F.conv2d(y * y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=3)
-        uxy = F.conv2d(x * y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=3)
+        uxx = F.conv2d(
+            x * x, self.gaussian_kernel, padding=self.kernel_size // 2, groups=3
+        )
+        uyy = F.conv2d(
+            y * y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=3
+        )
+        uxy = F.conv2d(
+            x * y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=3
+        )
         vx = uxx - ux * ux
         vy = uyy - uy * uy
         vxy = uxy - ux * uy

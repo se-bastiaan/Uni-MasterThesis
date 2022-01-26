@@ -9,6 +9,7 @@ from pytorch_lightning.callbacks import EarlyStopping
 from dataset import MVTecADDataModule
 from model import InTra
 
+
 def main(args):
     pl.seed_everything(args.seed)
 
@@ -19,7 +20,9 @@ def main(args):
     loggers = [tb_logger]
 
     trainer = pl.Trainer.from_argparse_args(args, gpus=1, logger=loggers)
-    trainer.callbacks.append(EarlyStopping(monitor="val_loss", min_delta=0.00, patience=50))
+    trainer.callbacks.append(
+        EarlyStopping(monitor="val_loss", min_delta=0.00, patience=500)
+    )
 
     mlflow.pytorch.autolog()
 
@@ -38,7 +41,7 @@ def main(args):
 
     trainer.fit(model, dm)
 
-    trainer.test(ckpt_path='best', datamodule=dm)
+    trainer.test(ckpt_path="best", datamodule=dm)
 
 
 if __name__ == "__main__":

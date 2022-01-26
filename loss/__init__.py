@@ -28,4 +28,3 @@ class InTraLoss(Module):
         total_loss = l2_loss + (self.alpha * ssim_loss) + (self.beta * msgms_loss)
 
         return l2_loss, ssim_loss, ssim_map, msgms_loss, msgms_map, total_loss
-

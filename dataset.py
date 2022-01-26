@@ -26,141 +26,115 @@ class MVTecAD(data.Dataset):
         self.patch_size = patch_size
         self.window_size = window_size
 
+    def __len__(self):
+        return len(self.image_list) * 600
+
     def __getitem__(self, index):
-        image = Image.open(self.image_list[index]).convert("RGB")
-        label = self.label_list[index]
+        image_index = index % len(self.image_list)
+        image = Image.open(self.image_list[image_index]).convert("RGB")
+        label = self.label_list[image_index]
 
         X = self.transform(image)
 
         # sampled random window from image
-        K, L = self.patch_size, self.window_size
-        C, H, W = X.shape
-        N = H // K
-        M = W // K
-        with torch.no_grad():
-            # (r, s) is the window's top-left patch coordinate
-            r = (
-                torch.FloatTensor(1)
-                .uniform_(0, N - L - 1)
-                .round()
-                .type(torch.long)
-                .item()
-            )
-            s = (
-                torch.FloatTensor(1)
-                .uniform_(0, M - L - 1)
-                .round()
-                .type(torch.long)
-                .item()
-            )
-            # (t, u) is the inpainted patch coordinate
-            t = torch.FloatTensor(1).uniform_(0, L - 1).round().type(torch.long).item()
-            u = torch.FloatTensor(1).uniform_(0, L - 1).round().type(torch.long).item()
+        _, H, W = X.shape
+        assert (H % self.patch_size == 0) and (
+            W % self.patch_size == 0
+        ), "Expected image width and height are divisible by patch size."
 
-        patches_info: dict = self._to_window_patches(
-            X, K=K, L=L, r=r, s=s, t=t, u=u, flatten_patch=True
-        )
+        patches_info: dict = self._to_window_patches(X)
 
         return patches_info, label
 
-    @staticmethod
-    def _to_window_patches(x, K, L, r, s, t, u, flatten_patch=True):
-        """
-        Source: https://github.com/uzl/inpainting-transformer/blob/master/inpainting_transformer_base.py
-        It will make K by K fixed patchs from an image.
-        Then it will randomly choose square grid of L by L patches.
-        One patch from L by L patches will be used as inpainting patch. (This one we want to produce from model)
-        Remaining patches will be feed as input of the model.
-        An example:
-            for image shape (3, 384, 384),
-            the main output will be (others positional information is not shown here):
-                - torch.Size([48, 768])
-                - torch.Size([1, 3, 16, 16]])  # it is not flatten because it will be used as image.
-                or, when flatten_patch=False
-                - torch.Size([48, 3, 16, 16])
-                - torch.Size([1, 3, 16, 16])
-        Args:
-            x: Image (Channel, Height, Width).
-            K (int): Patch size.
-                For example, if we want to want to make a 16*16 pixel patch,
-                then k=16.
-            L (int): Subgrid arm length. We we want to take 7*7 patches from all M*N patches,
-                then L=7
-            r (int): top position of (r, s) pair of subgrid start patch
-            s (int): right position of (r, s) pair of subgrid start patch
-            t (int): Local top position of (t, u) pair of inpainting patch
-            u (int): Local top position of (t, u) pair of inpaint pingatch
-
-            For more details of (r, s) and (t, u) pairs, please see section-3.1 of the paper.
-        """
+    def _to_window_patches(
+        self,
+        x
+    ):
         with torch.no_grad():
             C, H, W = x.shape
-            assert (H % K == 0) and (
-                W % K == 0
-            ), "Expected image width and height are divisible by patch size."
-            N = H // K
-            M = W // K
+            vertical_patch_count = H // self.patch_size
+            horizontal_patch_count = W // self.patch_size
 
-            # Reshape [C, H, W] --> [C, N, K, M, K]
-            x = x.reshape(C, N, K, M, K)
-            # Re-arrange axis [C, N, K, M, K] --> [N, M, C, K, K]
+            window_x, window_y = (
+                np.round(
+                    np.random.uniform(0, vertical_patch_count - self.window_size - 1)
+                ).astype(int),
+                np.round(
+                    np.random.uniform(0, horizontal_patch_count - self.window_size - 1)
+                ).astype(int),
+            )
+            patch_x, patch_y = (
+                np.round(np.random.uniform(0, self.window_size - 1)).astype(int),
+                np.round(np.random.uniform(0, self.window_size - 1)).astype(int),
+            )
+
+            # Reshape [C, H, W] --> [C, N, patch_size, M, patch_size]
+            x = x.reshape(
+                C,
+                vertical_patch_count,
+                self.patch_size,
+                horizontal_patch_count,
+                self.patch_size,
+            )
+            # Re-arrange axis [C, N, patch_size, M, patch_size] --> [N, M, C, patch_size, patch_size]
             #                 [0, 1, 2, 3, 4] --> [1, 3, 0, 2, 4]
             x = x.permute(1, 3, 0, 2, 4)
 
-            # We will choose L*L sub-grid from M*N gird.
-            # The coordinate(index) of top-left patch of L*L grid will be denoted as (r, s).
+            # We will choose window_size*window_size sub-grid from M*N gird.
+            # The coordinate(index) of top-left patch of window_size*window_size grid will be denoted as (r, s).
             # Uniform random integer will be generated for r, s coordinate(index)
-            # slicing [N, M, C, K, K] --> [L, L, C, K, K]
-            sub_x = x[
-                r : r + L,
-                s : s + L,
+            # slicing [N, M, C, patch_size, patch_size] --> [window_size, window_size, C, patch_size, patch_size]
+            window_subgrid = x[
+                window_x : window_x + self.window_size,
+                window_y : window_y + self.window_size,
                 :,
             ]
 
-            # Positional encoding for above selected L*L patchs.
+            # Positional encoding for above selected window_size*window_size patches.
             # We will use global index where the top-left patch is 0
             # and follow left-to-right english writing style.
-            all_pos_idx = torch.arange(0, N * M, dtype=torch.long).reshape(N, M)
-            sub_pos_idx = all_pos_idx[r : r + L, s : s + L]
+            grid_positions = torch.arange(
+                0, vertical_patch_count * horizontal_patch_count, dtype=torch.long
+            ).reshape(vertical_patch_count, horizontal_patch_count)
+            subgrid_positions = grid_positions[
+                window_x : window_x + self.window_size,
+                window_y : window_y + self.window_size,
+            ]
 
-            # Flatten in L dimension
-            # [L, L, C, K, K] --> [(L, L), C, K, K]
-            # i.e.: [7, 7, C, K, K] --> [49, C, K, K]
-            sub_x = sub_x.flatten(0, 1)
-            sub_pos_idx = sub_pos_idx.flatten(0)  # i.e. [7, 7] -> [49]
+            # Flatten in window_size dimension
+            # [window_size, window_size, C, patch_size, patch_size] --> [(window_size, window_size), C, patch_size, patch_size]
+            # i.e.: [7, 7, C, patch_size, patch_size] --> [49, C, patch_size, patch_size]
+            window_subgrid = window_subgrid.flatten(0, 1)
+            subgrid_positions = subgrid_positions.flatten(0)  # i.e. [7, 7] -> [49]
 
-            # we will take one patch from L*L patches which we will try to inpaint.
-            # For example, if L=7, then we will randomly take 1 patch as mask from 49(7*7).
-            # Remaining 48 will be feed into model. The goal is to predict that msked one.
-            mask_idx = (u * L) + t
-            # Choose target inpaint patch [1, C, K, K]
-            # i.e.: [1, C, K, K]
-            inpaint_patch = sub_x[mask_idx, :, :, :]
-            inpaint_pos_idx = sub_pos_idx[mask_idx]
+            # we will take one patch from window_size*window_size patches which we will try to inpaint.
+            # For example, if window_size=7, then we will randomly take 1 patch as mask from 49(7*7).
+            # Remaining 48 will be feed into model. The goal is to predict the unknown one.
+            patch_id = (patch_x * self.window_size) + patch_y
+            # Choose target inpaint patch [1, C, patch_size, patch_size]
+            # i.e.: [1, C, patch_size, patch_size]
+            target_patch = window_subgrid[patch_id, :, :, :]
+            target_subgrid_position = subgrid_positions[patch_id]
             # Separate remaining patches. These will be the conditioning neighbors.
-            # i.e.: [48, C, K, K]
-            neighbor_patchs = torch.cat(
-                [sub_x[0:mask_idx, :, :, :], sub_x[mask_idx + 1 :, :, :, :]], 0
+            # i.e.: [48, C, patch_size, patch_size]
+            context_patches = torch.cat(
+                [
+                    window_subgrid[0:patch_id, :, :, :],
+                    window_subgrid[patch_id + 1 :, :, :, :],
+                ],
+                0,
             )
 
-            neighbor_pos_idxs = torch.cat(
-                [sub_pos_idx[:mask_idx], sub_pos_idx[mask_idx + 1 :]], 0
+            context_subgrid_positions = torch.cat(
+                [subgrid_positions[:patch_id], subgrid_positions[patch_id + 1 :]], 0
             )
-
-            if flatten_patch:
-                # Flatten in K and C dimensions. For example-
-                # in neighbor_patchs: [48, C, K, K] --> [48, (C, K, K)]
-                neighbor_patchs = neighbor_patchs.flatten(1, 3)
 
         return {
-            "neighbor_patchs": neighbor_patchs,
-            "neighbor_positions": neighbor_pos_idxs,
-            "inpaint_patch": inpaint_patch,
-            "inpaint_position": inpaint_pos_idx,
+            "context_patches": context_patches.flatten(1, 3),
+            "context_positions": context_subgrid_positions,
+            "target_patch": target_patch,
+            "target_position": target_subgrid_position,
         }
-
-    def __len__(self):
-        return len(self.image_list)
 
 
 class MVTecADDataModule(LightningDataModule):
@@ -198,8 +172,7 @@ class MVTecADDataModule(LightningDataModule):
 
         test_image_list = self._get_image_list(test_imgdir)
         test_mask_list = [
-            self._get_image_mask(test_imgdir, test_labdir, x)
-            for x in test_image_list
+            self._get_image_mask(test_imgdir, test_labdir, x) for x in test_image_list
         ]
 
         self.test_dataset = MVTecAD(
@@ -214,25 +187,27 @@ class MVTecADDataModule(LightningDataModule):
         train_image_list = self._get_image_list(train_imgdir)
         random.shuffle(train_image_list)
 
-        train_image_list = train_image_list[
-            : int(len(train_image_list) * self.train_ratio)
-        ]
-        train_mask_list = [(np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)] * len(
-            train_image_list
+        train_size = len(train_image_list) - max(
+            20, int(len(train_image_list) * (1 - self.train_ratio))
         )
 
-        print('Amount of train images in dataset: ', len(train_image_list))
-        print('Amount of train masks in dataset: ', len(train_mask_list))
+        print(train_size)
 
-        val_image_list = train_image_list[
-            int(len(train_image_list) * self.train_ratio) :
-        ]
-        val_mask_list = [(np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)] * len(
-            val_image_list
-        )
+        train_image_list = train_image_list[:train_size]
+        train_mask_list = [
+            (np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
+        ] * len(train_image_list)
 
-        print('Amount of val images in dataset: ', len(val_image_list))
-        print('Amount of val masks in dataset: ', len(val_mask_list))
+        print("Amount of train images in dataset: ", len(train_image_list))
+        print("Amount of train masks in dataset: ", len(train_mask_list))
+
+        val_image_list = train_image_list[train_size:]
+        val_mask_list = [
+            (np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
+        ] * len(val_image_list)
+
+        print("Amount of val images in dataset: ", len(val_image_list))
+        print("Amount of val masks in dataset: ", len(val_mask_list))
 
         self.train_dataset = MVTecAD(
             self.patch_size,
@@ -249,17 +224,28 @@ class MVTecADDataModule(LightningDataModule):
             self._transform_infer(),
         )
 
+        print("Number of train patches in dataset: ", len(self.train_dataset))
+        print("Number of val patches in dataset: ", len(self.train_dataset))
+
     def train_dataloader(self):
-        return data.DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return data.DataLoader(
+            self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def val_dataloader(self):
-        return data.DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return data.DataLoader(
+            self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def test_dataloader(self):
-        return data.DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return data.DataLoader(
+            self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def predict_dataloader(self):
-        return data.DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return data.DataLoader(
+            self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def teardown(self, stage: Optional[str] = None):
         # Used to clean-up when the run is finished
@@ -278,7 +264,10 @@ class MVTecADDataModule(LightningDataModule):
 
     def _transform_infer(self):
         return transforms.Compose(
-            [transforms.Resize((self.image_size, self.image_size)), transforms.ToTensor()]
+            [
+                transforms.Resize((self.image_size, self.image_size)),
+                transforms.ToTensor(),
+            ]
         )
 
     def _get_image_list(self, path: str):
@@ -295,12 +284,7 @@ class MVTecADDataModule(LightningDataModule):
                     image_list.append(os.path.join(root, fname))
         return image_list
 
-    def _get_image_mask(
-        self,
-        test_imgdir: str,
-        truth_imgdir: str,
-        test_imgpath: str
-    ):
+    def _get_image_mask(self, test_imgdir: str, truth_imgdir: str, test_imgpath: str):
         """
 
         :param test_imgdir: Directory of the test images
@@ -331,6 +315,10 @@ class MVTecADDataModule(LightningDataModule):
 
 
 def _imshow(x_0):
+    print(len(x_0))
+    print(x_0.keys())
+    print(x_0["target_position"])
+    x_0 = x_0["target_patch"]
     for i in range(list(x_0.size())[0]):
         img = x_0[i].detach().cpu().numpy()
         img = img * 255.0
@@ -342,9 +330,17 @@ def _imshow(x_0):
 
 if __name__ == "__main__":
     image_type = "bottle"
-    image_size = (256, 256)
-    data_module = MVTecADDataModule(image_type, image_size, train_ratio=1.0)
+    image_size = 256
+    data_module = MVTecADDataModule(
+        num_workers=1,
+        patch_size=16,
+        window_size=7,
+        image_type=image_type,
+        image_size=image_size,
+        train_ratio=1.0,
+    )
     data_module.setup()
+    data_module.prepare_data()
     data_loader = data_module.train_dataloader()
     x_0, _ = iter(data_loader).next()
     _imshow(x_0)
