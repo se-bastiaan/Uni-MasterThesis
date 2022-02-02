@@ -25,7 +25,6 @@ class InTraModel(nn.Module):
         embed_dim: int = 512,
         num_channels: int = 3,
         dropout: float = 0,
-        loss=None,
         att_dropout=None,
     ):
         """
@@ -53,9 +52,7 @@ class InTraModel(nn.Module):
         self.patch_to_embedding = nn.Linear(self.n_pixels, embed_dim)
         self.generator = nn.Linear(embed_dim, self.n_pixels)
         self.x_inpaint = nn.Parameter(torch.randn(1, 1, embed_dim))
-        self.pos_embedding = nn.Parameter(
-            torch.randn(1, num_patches * num_patches, embed_dim)
-        )
+        self.pos_embedding = nn.Parameter(torch.randn(1, num_patches, embed_dim))
 
         builder = TransformerEncoderBuilder.from_kwargs(
             n_layers=num_layers,
@@ -77,14 +74,6 @@ class InTraModel(nn.Module):
         encoded_avg = torch.mean(encoded, dim=1)
         generated_patch = self.generator(encoded_avg)
         return generated_patch
-
-    def _compute_loss(self, patch_recon, patch_gt):
-        mse_loss = self.mse(patch_gt, patch_recon)
-        msgms_loss, msgms_map = self.msgms(patch_gt, patch_recon)
-        ssim_loss, ssim_map = self.ssim(patch_gt, patch_recon)
-        total_loss = mse_loss + 0.01 * msgms_loss + 0.01 * ssim_loss
-        total_loss = mse_loss + msgms_loss + ssim_loss
-        return total_loss, msgms_map, ssim_map
 
     def _preprocess_train_batch(self, image):
         # get img size
@@ -367,7 +356,15 @@ class InTra(pl.LightningModule):
             attention_type=args.attention_type,
         )
 
-        summary(self.model.to(torch.device('cuda' if torch.cuda.is_available() else 'cpu')), input_size=(512, 512))
+        summary(
+            self.model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu")),
+            input_size=(512, 512),
+        )
+
+        print(
+            "Parameters",
+            sum(p.numel() for p in self.model.parameters() if p.requires_grad),
+        )
 
     def configure_optimizers(self):
         optimizer = optim.AdamW(self.parameters(), lr=self.hparams.lr)
@@ -392,10 +389,12 @@ class InTra(pl.LightningModule):
             batch[0]
         )  # 0 is the index of the image
         reconstruction = self.model(x)
-        ground_truth, reconstruction = self.model.reshape_patches(
+        ground_truth_r, reconstruction_r = self.model.reshape_patches(
             ground_truth, reconstruction
         )
-        loss, msgms_map = self._calculate_loss(reconstruction, ground_truth, mode=mode)
+        loss, msgms_map = self._calculate_loss(
+            reconstruction_r, ground_truth_r, mode=mode
+        )
         return ground_truth, reconstruction, loss, msgms_map
 
     def training_step(self, batch, batch_idx):
