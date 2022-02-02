@@ -19,12 +19,10 @@ VALIDATE = "validate"
 
 
 class MVTecAD(data.Dataset):
-    def __init__(self, patch_size, window_size, image_list, label_list, transform):
+    def __init__(self, image_list, label_list, transform):
         self.image_list = image_list
         self.label_list = label_list
         self.transform = transform
-        self.patch_size = patch_size
-        self.window_size = window_size
 
     def __len__(self):
         return len(self.image_list) * 600
@@ -34,107 +32,7 @@ class MVTecAD(data.Dataset):
         image = Image.open(self.image_list[image_index]).convert("RGB")
         label = self.label_list[image_index]
 
-        X = self.transform(image)
-
-        # sampled random window from image
-        _, H, W = X.shape
-        assert (H % self.patch_size == 0) and (
-            W % self.patch_size == 0
-        ), "Expected image width and height are divisible by patch size."
-
-        patches_info: dict = self._to_window_patches(X)
-
-        return patches_info, label
-
-    def _to_window_patches(
-        self,
-        x
-    ):
-        with torch.no_grad():
-            C, H, W = x.shape
-            vertical_patch_count = H // self.patch_size
-            horizontal_patch_count = W // self.patch_size
-
-            window_x, window_y = (
-                np.round(
-                    np.random.uniform(0, vertical_patch_count - self.window_size - 1)
-                ).astype(int),
-                np.round(
-                    np.random.uniform(0, horizontal_patch_count - self.window_size - 1)
-                ).astype(int),
-            )
-            patch_x, patch_y = (
-                np.round(np.random.uniform(0, self.window_size - 1)).astype(int),
-                np.round(np.random.uniform(0, self.window_size - 1)).astype(int),
-            )
-
-            # Reshape [C, H, W] --> [C, N, patch_size, M, patch_size]
-            x = x.reshape(
-                C,
-                vertical_patch_count,
-                self.patch_size,
-                horizontal_patch_count,
-                self.patch_size,
-            )
-            # Re-arrange axis [C, N, patch_size, M, patch_size] --> [N, M, C, patch_size, patch_size]
-            #                 [0, 1, 2, 3, 4] --> [1, 3, 0, 2, 4]
-            x = x.permute(1, 3, 0, 2, 4)
-
-            # We will choose window_size*window_size sub-grid from M*N gird.
-            # The coordinate(index) of top-left patch of window_size*window_size grid will be denoted as (r, s).
-            # Uniform random integer will be generated for r, s coordinate(index)
-            # slicing [N, M, C, patch_size, patch_size] --> [window_size, window_size, C, patch_size, patch_size]
-            window_subgrid = x[
-                window_x : window_x + self.window_size,
-                window_y : window_y + self.window_size,
-                :,
-            ]
-
-            # Positional encoding for above selected window_size*window_size patches.
-            # We will use global index where the top-left patch is 0
-            # and follow left-to-right english writing style.
-            grid_positions = torch.arange(
-                0, vertical_patch_count * horizontal_patch_count, dtype=torch.long
-            ).reshape(vertical_patch_count, horizontal_patch_count)
-            subgrid_positions = grid_positions[
-                window_x : window_x + self.window_size,
-                window_y : window_y + self.window_size,
-            ]
-
-            # Flatten in window_size dimension
-            # [window_size, window_size, C, patch_size, patch_size] --> [(window_size, window_size), C, patch_size, patch_size]
-            # i.e.: [7, 7, C, patch_size, patch_size] --> [49, C, patch_size, patch_size]
-            window_subgrid = window_subgrid.flatten(0, 1)
-            subgrid_positions = subgrid_positions.flatten(0)  # i.e. [7, 7] -> [49]
-
-            # we will take one patch from window_size*window_size patches which we will try to inpaint.
-            # For example, if window_size=7, then we will randomly take 1 patch as mask from 49(7*7).
-            # Remaining 48 will be feed into model. The goal is to predict the unknown one.
-            patch_id = (patch_x * self.window_size) + patch_y
-            # Choose target inpaint patch [1, C, patch_size, patch_size]
-            # i.e.: [1, C, patch_size, patch_size]
-            target_patch = window_subgrid[patch_id, :, :, :]
-            target_subgrid_position = subgrid_positions[patch_id]
-            # Separate remaining patches. These will be the conditioning neighbors.
-            # i.e.: [48, C, patch_size, patch_size]
-            context_patches = torch.cat(
-                [
-                    window_subgrid[0:patch_id, :, :, :],
-                    window_subgrid[patch_id + 1 :, :, :, :],
-                ],
-                0,
-            )
-
-            context_subgrid_positions = torch.cat(
-                [subgrid_positions[:patch_id], subgrid_positions[patch_id + 1 :]], 0
-            )
-
-        return {
-            "context_patches": context_patches.flatten(1, 3),
-            "context_positions": context_subgrid_positions,
-            "target_patch": target_patch,
-            "target_position": target_subgrid_position,
-        }
+        return self.transform(image), label
 
 
 class MVTecADDataModule(LightningDataModule):
@@ -166,6 +64,7 @@ class MVTecADDataModule(LightningDataModule):
     def prepare_data(self) -> None:
         super().prepare_data()
         random.seed(self.seed)
+        np.random.seed(self.seed)
         image_dir = os.path.join(BASE_PATH, self.image_type)
         test_imgdir = os.path.join(image_dir, "test")
         test_labdir = os.path.join(image_dir, "ground_truth")
@@ -176,8 +75,6 @@ class MVTecADDataModule(LightningDataModule):
         ]
 
         self.test_dataset = MVTecAD(
-            self.patch_size,
-            self.window_size,
             test_image_list,
             test_mask_list,
             self._transform_infer(),
@@ -208,15 +105,11 @@ class MVTecADDataModule(LightningDataModule):
         print("Amount of train masks in dataset: ", len(train_mask_list))
 
         self.train_dataset = MVTecAD(
-            self.patch_size,
-            self.window_size,
             train_image_list,
             train_mask_list,
             self._transform_train(),
         )
         self.val_dataset = MVTecAD(
-            self.patch_size,
-            self.window_size,
             val_image_list,
             val_mask_list,
             self._transform_infer(),
@@ -227,22 +120,34 @@ class MVTecADDataModule(LightningDataModule):
 
     def train_dataloader(self):
         return data.DataLoader(
-            self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+            self.train_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
         )
 
     def val_dataloader(self):
         return data.DataLoader(
-            self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+            self.val_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
         )
 
     def test_dataloader(self):
         return data.DataLoader(
-            self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+            self.test_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
         )
 
     def predict_dataloader(self):
         return data.DataLoader(
-            self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers
+            self.test_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
         )
 
     def teardown(self, stage: Optional[str] = None):
