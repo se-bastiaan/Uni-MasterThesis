@@ -63,8 +63,6 @@ class MVTecADDataModule(LightningDataModule):
 
     def prepare_data(self) -> None:
         super().prepare_data()
-        random.seed(self.seed)
-        np.random.seed(self.seed)
         image_dir = os.path.join(BASE_PATH, self.image_type)
         test_imgdir = os.path.join(image_dir, "test")
         test_labdir = os.path.join(image_dir, "ground_truth")
@@ -137,7 +135,7 @@ class MVTecADDataModule(LightningDataModule):
     def test_dataloader(self):
         return data.DataLoader(
             self.test_dataset,
-            batch_size=self.batch_size,
+            batch_size=1,
             num_workers=self.num_workers,
             shuffle=False,
         )

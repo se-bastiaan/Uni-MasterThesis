@@ -1,13 +1,19 @@
+import os
 from argparse import ArgumentParser
+from os import listdir
+from os.path import isfile, join
 
+import cv2
 import pytorch_lightning as pl
 from pytorch_lightning import loggers as pl_loggers
 import torch
 import mlflow.pytorch
-from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
+from tqdm import tqdm
 
 from dataset import MVTecADDataModule
 from model import InTra
+from utils import tensor2nparr
 
 
 def main(args):
@@ -16,12 +22,40 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Sees device " + str(device))
 
-    tb_logger = pl_loggers.TensorBoardLogger("logs/")
+    tb_logger = pl_loggers.TensorBoardLogger(
+        "logs/", name=f"{args.image_type}-{args.max_epochs}-{args.attention_type}"
+    )
     loggers = [tb_logger]
 
-    trainer = pl.Trainer.from_argparse_args(args, gpus=1, logger=loggers)
+    checkpoint_best = ModelCheckpoint(
+        filename='best-{epoch}-{step}-{val_loss:.1f}',
+        dirpath=os.getcwd(),
+        save_top_k=1,
+        monitor="val_loss",
+        mode="min",
+    )
+
+    checkpoint_last = ModelCheckpoint(
+        filename='last-{epoch}-{step}',
+        dirpath=os.getcwd(),
+        save_last=True,
+        monitor="val_loss",
+        mode="min",
+    )
+
+    resume_checkpoint = None
+    if args.resume_checkpoint is not None:
+        checkpoint_path = args.checkpoint_path + f"/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.resume_checkpoint}/checkpoints"
+        files = [f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))]
+        resume_checkpoint = join(checkpoint_path, files[-1])
+
+    trainer = pl.Trainer.from_argparse_args(
+        args, gpus=1, logger=loggers, default_root_dir=args.checkpoint_path, resume_from_checkpoint=resume_checkpoint
+    )
+    trainer.callbacks.append(checkpoint_last)
+    trainer.callbacks.append(checkpoint_best)
     trainer.callbacks.append(
-        EarlyStopping(monitor="val_loss", min_delta=0.00, patience=500)
+        EarlyStopping(monitor="val_loss", min_delta=0.00, patience=5)
     )
 
     mlflow.pytorch.autolog()
@@ -37,16 +71,54 @@ def main(args):
         args.seed,
     )
     dm.prepare_data()
-    model = InTra(args)
 
-    trainer.fit(model, dm)
+    if args.load_checkpoint is not None:
+        checkpoint_path = args.checkpoint_path + f"/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.load_checkpoint}/checkpoints"
+        files = [f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))]
+        checkpoint_file = join(checkpoint_path, files[0])
+        if args.infer:
+            mod = InTra.load_from_checkpoint(checkpoint_file)
+            model = mod.model
+            model.eval()
 
-    trainer.test(ckpt_path="best", datamodule=dm)
+            test_loss = 0
+
+            with torch.no_grad():
+                with tqdm(dm.test_dataloader(), unit="batch") as loader:
+                    for data, label in loader:
+                        data = data.to(device)
+                        loss, image_recon, image_reassembled, msgms_map = model._process_one_image(data, mod._calculate_loss)
+                        test_loss += loss.item()
+
+                        data_arr = tensor2nparr(data)
+                        image_recon_arr = tensor2nparr(image_recon)
+                        image_reassembled_arr = tensor2nparr(image_reassembled)
+                        msgms_map_arr = tensor2nparr(msgms_map)
+
+                        cv2.imshow('image', data_arr[0])
+                        cv2.imshow('image_recon_arr', image_recon_arr[0])
+                        cv2.imshow('image_reassembled_arr', image_reassembled_arr[0])
+                        cv2.imshow('msgms_map_arr', msgms_map_arr[0])
+                        cv2.imshow('heatmap', cv2.applyColorMap(msgms_map_arr[0], cv2.COLORMAP_JET))
+                        cv2.waitKey(0)
+                        break
+        else:
+            model = InTra.load_from_checkpoint(checkpoint_file)
+            trainer.test(model, datamodule=dm)
+    else:
+        model = InTra(args)
+        trainer.fit(model, dm)
+        trainer.test(ckpt_path="best", datamodule=dm)
+
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser = pl.Trainer.add_argparse_args(parser)  # add built-in Trainer args
+    parser.add_argument("--checkpoint_path", type=str, default='./ckpt')
+    parser.add_argument("--load_checkpoint", type=str, default=None)
+    parser.add_argument("--infer", type=bool, default=False)
+    parser.add_argument("--resume_checkpoint", type=str, default=None)
     parser.add_argument("--image_type", type=str, default="wood")
     parser.add_argument("--dataset", type=str, default="./mvted-ad/")
     parser.add_argument("--image_size", type=int, default=512)

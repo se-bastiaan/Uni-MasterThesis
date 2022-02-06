@@ -183,147 +183,125 @@ class InTraModel(nn.Module):
         )
         return ground_truth, reconstruction
 
-    # def _process_one_image(self, image):
-    #     image_recon, gt, loss = self._process_infer_image(image)
-    #     _, msgms_map, _ = self._compute_loss(image_recon, gt)
-    #
-    #     return loss, image_recon, gt, msgms_map
-    #
-    # def _process_infer_image(self, image):
-    #     patches_recon = []
-    #     patches_gt = []
-    #     patches_loss = []
-    #     # get img size
-    #     B, C, H, W = image.size()
-    #     assert B == 1
-    #     # confusing notations.. we use M x N not N x M for original papers.
-    #     M = int(H / self.K)
-    #     N = int(W / self.K)
-    #
-    #     for t in range(M):
-    #         for u in range(N):
-    #             r = g(t, self.L) - max(0, g(t, self.L) + self.L - M - 1)
-    #             s = g(u, self.L) - max(0, g(u, self.L) + self.L - N - 1)
-    #             subgrid_input, subgrid_inpaint = self._process_subgrid(
-    #                 image,
-    #                 self.x_inpaint,
-    #                 self.pos_embedding,
-    #                 self.patch_to_embedding,
-    #                 M,
-    #                 N,
-    #                 r,
-    #                 s,
-    #                 t,
-    #                 u,
-    #                 self.K,
-    #                 self.L,
-    #             )
-    #             patch_recon = self.forward(subgrid_input)
-    #             patches_recon.append(patch_recon)
-    #             patches_gt.append(subgrid_inpaint)
-    #
-    #             p_recon_r = patch_recon.reshape(
-    #                 patch_recon.size(0), self.C, self.K, self.K
-    #             )
-    #             p_gt_r = subgrid_inpaint.reshape(
-    #                 subgrid_inpaint.size(0), self.C, self.K, self.K
-    #             )
-    #             patches_loss.append(self._compute_loss(p_recon_r, p_gt_r)[0])
-    #
-    #     image_recon = self._combine_recon_patches(patches_recon, M, N, self.K)
-    #     gt = self._combine_recon_patches(patches_gt, M, N, self.K)
-    #     loss = torch.mean(torch.tensor(patches_loss)) / B
-    #     return image_recon, gt, loss
-    #
-    # def _process_subgrid(self, image, M, N, r, s, t, u):
-    #     # change r, s range from 1 <= r, s <= M-L+1, N-L+1
-    #     #                     to 0 <= r, s <= M-L, N-L
-    #     r = min(max(0, r - 1), M - self.L)
-    #     s = min(max(0, s - 1), N - self.L)
-    #     B, C, H, W = image.size()
-    #     # subgrid -> [1, C, K*self.L, K*self.L]
-    #     subgrid = image[
-    #         :, :, self.K * r : self.K * (r + self.L), self.K * s : self.K * (s + self.L)
-    #     ]
-    #     # subgrid_flatten : [1, self.L*self.L, self.K*self.K*C]
-    #     subgrid_flatten = rearrange(
-    #         subgrid, "b c (h p1) (w p2) -> b (h w) (p1 p2 c)", p1=self.K, p2=self.K
-    #     )
-    #
-    #     # pos_embedding_glb_idx : [1, L*L]
-    #     pos_embedding_glb_grid = torch.arange(1, M * N + 1, dtype=torch.long).reshape(
-    #         M, N
-    #     )
-    #     pos_embedding_glb_idx = pos_embedding_glb_grid[
-    #         r : r + self.L, s : s + self.L
-    #     ].unsqueeze(0)
-    #     pos_embedding_glb_idx = pos_embedding_glb_idx.reshape(
-    #         pos_embedding_glb_idx.size(0), -1
-    #     )
-    #     pos_embedding_glb_idx -= 1
-    #
-    #     # pos_embedding_grid : [1, self.L*self.L, d_model]
-    #     pos_embedding = torch.zeros(1, self.L * self.L, self.pos_embedding.size(2)).to(
-    #         self.pos_embedding.device
-    #     )
-    #     for n in range(pos_embedding_glb_idx.size(1)):
-    #         pos_embedding[:, n, :] = self.pos_embedding[
-    #             :, pos_embedding_glb_idx[:, n], :
-    #         ]
-    #
-    #     # r, s, t, u ... M x N
-    #     # t, u : 0 <= t <= M / 0 <= u <= n
-    #
-    #     # tu_1d_idx : 0 <= val < M*N
-    #     # but it should be shape in L*L
-    #     tu_1d_idx = torch.tensor([(t - r) * self.L + (u - s)], dtype=torch.long)
-    #     tu_one_hot = functional.one_hot(tu_1d_idx, self.L * self.L)
-    #     tu_idx_T = tu_one_hot.bool()
-    #     tu_idx_F = torch.logical_not(tu_idx_T)
-    #
-    #     subgrid_inpaint = subgrid_flatten[tu_idx_T]
-    #     pos_embedding_inpaint = pos_embedding[tu_idx_T].unsqueeze(1)
-    #
-    #     subgrid_emb_input = subgrid_flatten[tu_idx_F].reshape(
-    #         B, self.L * self.L - 1, self.K * self.K * C
-    #     )
-    #     pos_embedding_emb_input = pos_embedding[tu_idx_F].reshape(
-    #         B, self.L * self.L - 1, -1
-    #     )
-    #
-    #     subgrid_input = torch.cat(
-    #         [
-    #             self.x_inpaint + pos_embedding_inpaint,
-    #             self.patch_to_embedding(subgrid_emb_input) + pos_embedding_emb_input,
-    #         ],
-    #         dim=1,
-    #     )
-    #     return subgrid_input, subgrid_inpaint
-    #
-    # def _combine_recon_patches(self, patch_list, M, N, K):
-    #     # patch_list : list of M*N [1, K*K*C] tensor
-    #     # patches_concat : [M*N, 1, K*K*C]
-    #     patch_list = [x.unsqueeze(0) for x in patch_list]
-    #     patches_concat = torch.cat(patch_list, dim=0)
-    #     # patches_concat : [1, M*N, K*K*C]
-    #     patches_concat = patches_concat.permute(1, 0, 2)
-    #     # recon_image : [1, C, H, W]
-    #     recon_image = rearrange(
-    #         patches_concat,
-    #         "b (h w) (p1 p2 c) -> b c (h p1) (w p2) ",
-    #         h=M,
-    #         w=N,
-    #         p1=K,
-    #         p2=K,
-    #     )
-    #     return recon_image
+    def _process_one_image(self, image, compute_loss):
+        image_recon, gt, loss = self._process_infer_image(image, compute_loss)
+        _, msgms_map = compute_loss(image_recon, gt)
+
+        return loss, image_recon, gt, msgms_map
+
+    def _process_infer_image(self, image, compute_loss):
+        patches_recon = []
+        patches_gt = []
+        patches_loss = []
+        # get img size
+        B, C, H, W = image.size()
+        print(B)
+        assert B == 1
+        # confusing notations.. we use M x N not N x M for original papers.
+        M = int(H / self.K)
+        N = int(W / self.K)
+
+        for t in range(M):
+            for u in range(N):
+                r = g(t, self.L) - max(0, g(t, self.L) + self.L - M - 1)
+                s = g(u, self.L) - max(0, g(u, self.L) + self.L - N - 1)
+                subgrid_input, subgrid_inpaint = self._process_subgrid(
+                    image,
+                    M,
+                    N,
+                    r,
+                    s,
+                    t,
+                    u
+                )
+                patch_recon = self.forward(subgrid_input)
+                patches_recon.append(patch_recon)
+                patches_gt.append(subgrid_inpaint)
+
+                p_recon_r = patch_recon.reshape(
+                    patch_recon.size(0), self.C, self.K, self.K
+                )
+                p_gt_r = subgrid_inpaint.reshape(
+                    subgrid_inpaint.size(0), self.C, self.K, self.K
+                )
+                patches_loss.append(compute_loss(p_recon_r, p_gt_r)[0])
+
+        image_recon = self._combine_recon_patches(patches_recon, M, N)
+        gt = self._combine_recon_patches(patches_gt, M, N)
+        loss = torch.mean(torch.tensor(patches_loss)) / B
+        return image_recon, gt, loss
+
+    def _process_subgrid(self, image, M, N, r, s, t, u):
+        # change r, s range from 1 <= r, s <= M-L+1, N-L+1
+        #                     to 0 <= r, s <= M-L, N-L
+        r = min(max(0, r - 1), M - self.L)
+        s = min(max(0, s - 1), N - self.L)
+        B, C, H, W = image.size()
+        # subgrid -> [1, C, K*self.L, K*self.L]
+        subgrid = image[
+            :, :, self.K * r : self.K * (r + self.L), self.K * s : self.K * (s + self.L)
+        ]
+        # subgrid_flatten : [1, self.L*self.L, self.K*self.K*C]
+        subgrid_flatten = rearrange(
+            subgrid, "b c (h p1) (w p2) -> b (h w) (p1 p2 c)", p1=self.K, p2=self.K
+        )
+
+        # pos_embedding_glb_idx : [1, L*L]
+        pos_embedding_glb_grid = torch.arange(1, M * N + 1, dtype=torch.long).reshape(
+            M, N
+        )
+        pos_embedding_glb_idx = pos_embedding_glb_grid[
+            r : r + self.L, s : s + self.L
+        ].unsqueeze(0)
+        pos_embedding_glb_idx = pos_embedding_glb_idx.reshape(
+            pos_embedding_glb_idx.size(0), -1
+        )
+        pos_embedding_glb_idx -= 1
+
+        # pos_embedding_grid : [1, self.L*self.L, d_model]
+        pos_embedding = torch.zeros(1, self.L * self.L, self.pos_embedding.size(2)).to(
+            self.pos_embedding.device
+        )
+        for n in range(pos_embedding_glb_idx.size(1)):
+            pos_embedding[:, n, :] = self.pos_embedding[
+                :, pos_embedding_glb_idx[:, n], :
+            ]
+
+        # r, s, t, u ... M x N
+        # t, u : 0 <= t <= M / 0 <= u <= n
+
+        # tu_1d_idx : 0 <= val < M*N
+        # but it should be shape in L*L
+        tu_1d_idx = torch.tensor([(t - r) * self.L + (u - s)], dtype=torch.long)
+        tu_one_hot = functional.one_hot(tu_1d_idx, self.L * self.L)
+        tu_idx_T = tu_one_hot.bool()
+        tu_idx_F = torch.logical_not(tu_idx_T)
+
+        subgrid_inpaint = subgrid_flatten[tu_idx_T]
+        pos_embedding_inpaint = pos_embedding[tu_idx_T].unsqueeze(1)
+
+        subgrid_emb_input = subgrid_flatten[tu_idx_F].reshape(
+            B, self.L * self.L - 1, self.K * self.K * C
+        )
+        pos_embedding_emb_input = pos_embedding[tu_idx_F].reshape(
+            B, self.L * self.L - 1, -1
+        )
+
+        subgrid_input = torch.cat(
+            [
+                self.x_inpaint + pos_embedding_inpaint,
+                self.patch_to_embedding(subgrid_emb_input) + pos_embedding_emb_input,
+            ],
+            dim=1,
+        )
+        return subgrid_input, subgrid_inpaint
 
     def _combine_recon_patches(self, patch_list, M, N):
-        # patch_list : list of M*N [1, patch_size*patch_size*C] tensor
-        # patches_concat : [M*N, 1, patch_size*patch_size*C]
+        # patch_list : list of M*N [1, K*K*C] tensor
+        # patches_concat : [M*N, 1, K*K*C]
         patch_list = [x.unsqueeze(0) for x in patch_list]
         patches_concat = torch.cat(patch_list, dim=0)
-        # patches_concat : [1, M*N, patch_size*patch_size*C]
+        # patches_concat : [1, M*N, K*K*C]
         patches_concat = patches_concat.permute(1, 0, 2)
         # recon_image : [1, C, H, W]
         recon_image = rearrange(
@@ -344,26 +322,21 @@ class InTra(pl.LightningModule):
         self.loss = InTraLoss()
         self.last_epoch = self.current_epoch
         self.model = InTraModel(
-            image_size=args.image_size,
-            patch_size=args.patch_size,
-            window_size=args.window_size,
-            num_layers=args.num_layers,
-            num_heads=args.num_heads,
-            embed_dim=args.embed_dim,
-            num_channels=args.num_channels,
-            dropout=args.dropout,
-            att_dropout=args.att_dropout,
-            attention_type=args.attention_type,
+            image_size=self.hparams.image_size,
+            patch_size=self.hparams.patch_size,
+            window_size=self.hparams.window_size,
+            num_layers=self.hparams.num_layers,
+            num_heads=self.hparams.num_heads,
+            embed_dim=self.hparams.embed_dim,
+            num_channels=self.hparams.num_channels,
+            dropout=self.hparams.dropout,
+            att_dropout=self.hparams.att_dropout,
+            attention_type=self.hparams.attention_type,
         )
 
         summary(
             self.model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu")),
             input_size=(512, 512),
-        )
-
-        print(
-            "Parameters",
-            sum(p.numel() for p in self.model.parameters() if p.requires_grad),
         )
 
     def configure_optimizers(self):
@@ -389,12 +362,10 @@ class InTra(pl.LightningModule):
             batch[0]
         )  # 0 is the index of the image
         reconstruction = self.model(x)
-        ground_truth_r, reconstruction_r = self.model.reshape_patches(
+        ground_truth, reconstruction = self.model.reshape_patches(
             ground_truth, reconstruction
         )
-        loss, msgms_map = self._calculate_loss(
-            reconstruction_r, ground_truth_r, mode=mode
-        )
+        loss, msgms_map = self._calculate_loss(reconstruction, ground_truth, mode=mode)
         return ground_truth, reconstruction, loss, msgms_map
 
     def training_step(self, batch, batch_idx):
