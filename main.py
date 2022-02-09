@@ -4,6 +4,7 @@ from os import listdir
 from os.path import isfile, join
 
 import cv2
+import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning import loggers as pl_loggers
 import torch
@@ -13,7 +14,7 @@ from tqdm import tqdm
 
 from dataset import MVTecADDataModule
 from model import InTra
-from utils import tensor2nparr
+from utils import tensor2nparr, compute_auroc
 
 
 def main(args):
@@ -28,8 +29,7 @@ def main(args):
     loggers = [tb_logger]
 
     checkpoint_best = ModelCheckpoint(
-        filename='best-{epoch}-{step}-{val_loss:.1f}',
-        dirpath=os.getcwd(),
+        filename='best-{epoch}-{step}-{val_loss:.5f}',
         save_top_k=1,
         monitor="val_loss",
         mode="min",
@@ -37,7 +37,6 @@ def main(args):
 
     checkpoint_last = ModelCheckpoint(
         filename='last-{epoch}-{step}',
-        dirpath=os.getcwd(),
         save_last=True,
         monitor="val_loss",
         mode="min",
@@ -55,7 +54,7 @@ def main(args):
     trainer.callbacks.append(checkpoint_last)
     trainer.callbacks.append(checkpoint_best)
     trainer.callbacks.append(
-        EarlyStopping(monitor="val_loss", min_delta=0.00, patience=5)
+        EarlyStopping(monitor="val_loss", min_delta=0.00, patience=50)
     )
 
     mlflow.pytorch.autolog()
@@ -82,26 +81,32 @@ def main(args):
             model.eval()
 
             test_loss = 0
+            amaps = []
+            gt = []
 
             with torch.no_grad():
                 with tqdm(dm.test_dataloader(), unit="batch") as loader:
                     for data, label in loader:
                         data = data.to(device)
                         loss, image_recon, image_reassembled, msgms_map = model._process_one_image(data, mod._calculate_loss)
-                        test_loss += loss.item()
+                        test_loss += loss.detach().cpu().numpy()
 
-                        data_arr = tensor2nparr(data)
-                        image_recon_arr = tensor2nparr(image_recon)
-                        image_reassembled_arr = tensor2nparr(image_reassembled)
-                        msgms_map_arr = tensor2nparr(msgms_map)
+                        gt.append(tensor2nparr(data))
+                        amaps.append(tensor2nparr(msgms_map))
 
-                        cv2.imshow('image', data_arr[0])
-                        cv2.imshow('image_recon_arr', image_recon_arr[0])
-                        cv2.imshow('image_reassembled_arr', image_reassembled_arr[0])
-                        cv2.imshow('msgms_map_arr', msgms_map_arr[0])
-                        cv2.imshow('heatmap', cv2.applyColorMap(msgms_map_arr[0], cv2.COLORMAP_JET))
-                        cv2.waitKey(0)
-                        break
+                        # data_arr = tensor2nparr(data)
+                        # image_recon_arr = tensor2nparr(image_recon)
+                        # image_reassembled_arr = tensor2nparr(image_reassembled)
+                        # msgms_map_arr = tensor2nparr(msgms_map)
+                        #
+                        # cv2.imshow('image', data_arr[0])
+                        # cv2.imshow('image_recon_arr', image_recon_arr[0])
+                        # cv2.imshow('image_reassembled_arr', image_reassembled_arr[0])
+                        # cv2.imshow('msgms_map_arr', msgms_map_arr[0])
+                        # cv2.imshow('heatmap', cv2.applyColorMap(msgms_map_arr[0], cv2.COLORMAP_JET))
+                        # cv2.waitKey(0)
+                print(test_loss)
+                print(compute_auroc(0, np.array(amaps), np.array(gt)))
         else:
             model = InTra.load_from_checkpoint(checkpoint_file)
             trainer.test(model, datamodule=dm)

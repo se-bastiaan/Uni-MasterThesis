@@ -19,13 +19,14 @@ VALIDATE = "validate"
 
 
 class MVTecAD(data.Dataset):
-    def __init__(self, image_list, label_list, transform):
+    def __init__(self, image_list, label_list, transform, stage='train'):
         self.image_list = image_list
         self.label_list = label_list
         self.transform = transform
+        self.stage = stage
 
     def __len__(self):
-        return len(self.image_list) * 600
+        return len(self.image_list) * (1 if self.stage == 'test' else 600)
 
     def __getitem__(self, index):
         image_index = index % len(self.image_list)
@@ -76,6 +77,7 @@ class MVTecADDataModule(LightningDataModule):
             test_image_list,
             test_mask_list,
             self._transform_infer(),
+            stage='test'
         )
 
         train_imgdir = os.path.join(image_dir, os.path.join("train", "good"))
@@ -106,11 +108,13 @@ class MVTecADDataModule(LightningDataModule):
             train_image_list,
             train_mask_list,
             self._transform_train(),
+            stage='train'
         )
         self.val_dataset = MVTecAD(
             val_image_list,
             val_mask_list,
             self._transform_infer(),
+            stage='val'
         )
 
         print("Number of train patches in dataset: ", len(self.train_dataset))

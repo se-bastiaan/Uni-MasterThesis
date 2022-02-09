@@ -195,7 +195,6 @@ class InTraModel(nn.Module):
         patches_loss = []
         # get img size
         B, C, H, W = image.size()
-        print(B)
         assert B == 1
         # confusing notations.. we use M x N not N x M for original papers.
         M = int(H / self.K)
