@@ -1,5 +1,6 @@
 from argparse import Namespace
 
+import cv2
 import pytorch_lightning as pl
 import torch
 from einops import rearrange
@@ -338,6 +339,14 @@ class InTra(pl.LightningModule):
             input_size=(512, 512),
         )
 
+        self.test_artifacts = {
+            "img": [],
+            "reconst": [],
+            "gt": [],
+            "amap": [],
+            "labels": [],
+        }
+
     def configure_optimizers(self):
         optimizer = optim.AdamW(self.parameters(), lr=self.hparams.lr)
         lr_scheduler = optim.lr_scheduler.MultiStepLR(
@@ -389,6 +398,24 @@ class InTra(pl.LightningModule):
         return loss
 
     def test_step(self, batch, batch_idx):
-        image_recon, gt, loss = self._process_infer_image(batch[0])
-        _, msgms_map, _ = self._compute_loss(image_recon, gt)
+        img = batch[0]
+        gt_mask, gt_class = batch[1]
+
+        loss, image_recon, image_reassembled, msgms_map = self.model._process_one_image(img, self._calculate_loss)
+
+        self.test_artifacts["amap"].extend(msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy())
+        self.test_artifacts["img"].extend(img.permute(0, 2, 3, 1).detach().cpu().numpy())
+        self.test_artifacts["reconst"].extend(image_recon.permute(0, 2, 3, 1).detach().cpu().numpy())
+        # print(len(gt))
+        self.test_artifacts["gt"].extend(gt_mask.detach().cpu().numpy())
+        self.test_artifacts["labels"].append(gt_class)
+
+        cv2.imshow('image', self.test_artifacts["img"][0])
+        cv2.imshow('image_reconstruction', self.test_artifacts["reconst"][0])
+        cv2.imshow('image_mask', self.test_artifacts["gt"][0])
+        cv2.imshow('anomaly map', self.test_artifacts["amap"][0])
+        # cv2.imshow('heatmap', cv2.applyColorMap(self.test_artifacts["amap"][0], cv2.COLORMAP_JET))
+        cv2.waitKey(0)
+
         return loss
+

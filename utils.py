@@ -39,3 +39,26 @@ def compute_auroc(epoch: int, ep_reconst: NDArray, ep_gt: NDArray) -> float:
     plt.close()
 
     return score
+
+def bilinears(images, shape) -> np.ndarray:
+    import cv2
+    N = images.shape[0]
+    new_shape = (N,) + shape
+    ret = np.zeros(new_shape, dtype=images.dtype)
+    for i in range(N):
+        ret[i] = cv2.resize(images[i], dsize=shape[::-1], interpolation=cv2.INTER_LINEAR)
+    return ret
+
+def detection_auroc(labels, anomaly_scores):
+    labels = np.asarray(labels, dtype=np.dtype('object,int'))['f1']
+    auroc = roc_auc_score(labels, anomaly_scores)
+    return auroc
+
+
+def segmentation_auroc(gt, anomaly_maps):
+    gt = gt.astype(np.int32)
+    gt[gt == 255] = 1  # 1: anomaly
+
+    anomaly_maps = bilinears(anomaly_maps, (256, 256))
+    auroc = roc_auc_score(gt.flatten(), anomaly_maps.flatten())
+    return auroc

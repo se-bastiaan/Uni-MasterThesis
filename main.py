@@ -6,6 +6,7 @@ from os.path import isfile, join
 import cv2
 import numpy as np
 import pytorch_lightning as pl
+from matplotlib.pyplot import savefig
 from pytorch_lightning import loggers as pl_loggers
 import torch
 import mlflow.pytorch
@@ -94,22 +95,42 @@ def main(args):
                         gt.append(tensor2nparr(data))
                         amaps.append(tensor2nparr(msgms_map))
 
-                        # data_arr = tensor2nparr(data)
-                        # image_recon_arr = tensor2nparr(image_recon)
-                        # image_reassembled_arr = tensor2nparr(image_reassembled)
-                        # msgms_map_arr = tensor2nparr(msgms_map)
-                        #
-                        # cv2.imshow('image', data_arr[0])
-                        # cv2.imshow('image_recon_arr', image_recon_arr[0])
-                        # cv2.imshow('image_reassembled_arr', image_reassembled_arr[0])
-                        # cv2.imshow('msgms_map_arr', msgms_map_arr[0])
-                        # cv2.imshow('heatmap', cv2.applyColorMap(msgms_map_arr[0], cv2.COLORMAP_JET))
-                        # cv2.waitKey(0)
+                        data_arr = tensor2nparr(data)
+                        image_recon_arr = tensor2nparr(image_recon)
+                        image_reassembled_arr = tensor2nparr(image_reassembled)
+                        msgms_map_arr = tensor2nparr(msgms_map)
+
+                        cv2.imshow('image', data_arr[0])
+                        cv2.imshow('image_recon_arr', image_recon_arr[0])
+                        cv2.imshow('image_reassembled_arr', image_reassembled_arr[0])
+                        cv2.imshow('msgms_map_arr', msgms_map_arr[0])
+                        cv2.imshow('heatmap', cv2.applyColorMap(msgms_map_arr[0], cv2.COLORMAP_JET))
+                        cv2.waitKey(0)
                 print(test_loss)
                 print(compute_auroc(0, np.array(amaps), np.array(gt)))
         else:
             model = InTra.load_from_checkpoint(checkpoint_file)
-            trainer.test(model, datamodule=dm)
+            result = trainer.test(model, datamodule=dm)
+            print(result)
+
+            ep_amap = np.array(model.test_artifacts["amap"])
+            ep_amap = (ep_amap - ep_amap.min()) / (ep_amap.max() - ep_amap.min())
+            model.test_artifacts["amap"] = list(ep_amap)
+
+            cv2.imshow('image', model.test_artifacts["img"][0])
+            cv2.imshow('image_reconstruction', model.test_artifacts["reconst"][0])
+            cv2.imshow('image_mask', model.test_artifacts["gt"][0])
+            cv2.imshow('anomaly map', model.test_artifacts["amap"][0])
+            cv2.imshow('heatmap', cv2.applyColorMap(model.test_artifacts["amap"][0], cv2.COLORMAP_JET))
+            cv2.waitKey(0)
+
+            auroc = compute_auroc(
+                0,
+                np.array(model.test_artifacts["amap"]),
+                np.array(model.test_artifacts["gt"])
+            )
+            print(auroc)
+
     else:
         model = InTra(args)
         trainer.fit(model, dm)
@@ -122,7 +143,7 @@ if __name__ == "__main__":
     parser = pl.Trainer.add_argparse_args(parser)  # add built-in Trainer args
     parser.add_argument("--checkpoint_path", type=str, default='./ckpt')
     parser.add_argument("--load_checkpoint", type=str, default=None)
-    parser.add_argument("--infer", type=bool, default=False)
+    parser.add_argument("--infer", action='store_true', default=False)
     parser.add_argument("--resume_checkpoint", type=str, default=None)
     parser.add_argument("--image_type", type=str, default="wood")
     parser.add_argument("--dataset", type=str, default="./mvted-ad/")
