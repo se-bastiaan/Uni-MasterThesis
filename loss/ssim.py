@@ -28,7 +28,7 @@ class SSIMLoss(Module):
     ) -> Tuple[Tensor, Tensor]:
 
         if not self.gaussian_kernel.is_cuda:
-            self.gaussian_kernel = self.gaussian_kernel.to(x.device)
+            self.gaussian_kernel = self.gaussian_kernel.type_as(x)
 
         ssim_map = self._ssim(x, y)
 

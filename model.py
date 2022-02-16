@@ -129,7 +129,7 @@ class InTraModel(nn.Module):
         # pos_embedding : [B, L*L, d_model]
         pos_embedding = torch.zeros(
             (B, self.L * self.L, self.pos_embedding.size(2))
-        ).to(self.pos_embedding.device)
+        ).type_as(self.pos_embedding)
         for b in range(B):
             for n in range(pos_embedding_glb_idx.size(1)):
                 pos_embedding[b, n, :] = self.pos_embedding[
@@ -259,8 +259,8 @@ class InTraModel(nn.Module):
         pos_embedding_glb_idx -= 1
 
         # pos_embedding_grid : [1, self.L*self.L, d_model]
-        pos_embedding = torch.zeros(1, self.L * self.L, self.pos_embedding.size(2)).to(
-            self.pos_embedding.device
+        pos_embedding = torch.zeros(1, self.L * self.L, self.pos_embedding.size(2)).type_as(
+            self.pos_embedding
         )
         for n in range(pos_embedding_glb_idx.size(1)):
             pos_embedding[:, n, :] = self.pos_embedding[
@@ -359,10 +359,10 @@ class InTra(pl.LightningModule):
             Y_pred, Y
         )
 
-        self.log(f"{mode}_loss", total_loss)
-        self.log(f"{mode}_L2_loss", l2_loss)
-        self.log(f"{mode}_GMS_loss", msgms_loss)
-        self.log(f"{mode}_SSIM_loss", ssim_loss)
+        self.log(f"{mode}_loss", total_loss, sync_dist=True)
+        self.log(f"{mode}_L2_loss", l2_loss, sync_dist=True)
+        self.log(f"{mode}_GMS_loss", msgms_loss, sync_dist=True)
+        self.log(f"{mode}_SSIM_loss", ssim_loss, sync_dist=True)
         return total_loss, msgms_map
 
     def _step(self, batch, mode):

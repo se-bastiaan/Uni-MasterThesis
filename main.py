@@ -68,7 +68,7 @@ def main(args):
         resume_checkpoint = join(checkpoint_path, files[-1])
 
     trainer = pl.Trainer.from_argparse_args(
-        args, gpus=1, logger=loggers, default_root_dir=args.checkpoint_path, resume_from_checkpoint=resume_checkpoint
+        args, auto_select_gpus=True, strategy='ddp', logger=loggers, default_root_dir=args.checkpoint_path, resume_from_checkpoint=resume_checkpoint
     )
     trainer.callbacks.append(checkpoint_last)
     trainer.callbacks.append(checkpoint_best)

@@ -18,10 +18,10 @@ class MSGMSLoss(Module):
     def forward(self, img1: Tensor, img2: Tensor) -> Tuple[Tensor, Tensor]:
 
         if not self.prewitt_x.is_cuda or not self.prewitt_y.is_cuda:
-            self.prewitt_x = self.prewitt_x.to(img1.device)
-            self.prewitt_y = self.prewitt_y.to(img1.device)
+            self.prewitt_x = self.prewitt_x.type_as(img1)
+            self.prewitt_y = self.prewitt_y.type_as(img1)
         if not self.mean_filter.is_cuda:
-            self.mean_filter = self.mean_filter.to(img1.device)
+            self.mean_filter = self.mean_filter.type_as(img1)
 
         b, c, h, w = img1.shape
         msgms_map = 0
