@@ -1,4 +1,3 @@
-import os
 from argparse import ArgumentParser
 from os import listdir
 from os.path import isfile, join
@@ -6,7 +5,6 @@ from os.path import isfile, join
 import cv2
 import numpy as np
 import pytorch_lightning as pl
-from matplotlib.pyplot import savefig
 from pytorch_lightning import loggers as pl_loggers
 import torch
 import mlflow.pytorch
@@ -17,9 +15,29 @@ from dataset import MVTecADDataModule
 from model import InTra
 from utils import tensor2nparr, compute_auroc
 
+IMAGE_SIZE = {
+    'carpet': 512,
+    'grid': 256,
+    'leather': 512,
+    'tile': 512,
+    'wood': 512,
+    'bottle': 256,
+    'cable': 256,
+    'capsule': 320,
+    'hazelnut': 256,
+    'metal_nut': 256,
+    'pill': 512,
+    'screw': 320,
+    'toothbrush': 256,
+    'transistor': 256,
+    'zipper': 512
+}
 
 def main(args):
+    args.image_size = args.image_size if args.image_size else IMAGE_SIZE[args.image_type]
+
     pl.seed_everything(args.seed)
+    torch.backends.cudnn.benchmark = True
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Sees device " + str(device))
@@ -147,7 +165,7 @@ if __name__ == "__main__":
     parser.add_argument("--resume_checkpoint", type=str, default=None)
     parser.add_argument("--image_type", type=str, default="wood")
     parser.add_argument("--dataset", type=str, default="./mvted-ad/")
-    parser.add_argument("--image_size", type=int, default=512)
+    parser.add_argument("--image_size", type=int, default=None)
     parser.add_argument("--patch_size", type=int, default=16)
     parser.add_argument("--window_size", type=int, default=7)
     parser.add_argument("--image_channels", type=int, default=3)
