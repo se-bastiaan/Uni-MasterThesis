@@ -4,7 +4,7 @@
 #SBATCH --time=2-00:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=sversteeg@science.ru.nl
-#SBATCH --gres=gpu:4i
+#SBATCH --gres=gpu:4
 #SBATCH --partition=csedu
 #SBATCH --mem=32G
 #SBATCH -N 1 -n 4
