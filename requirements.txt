@@ -125,11 +125,11 @@ terminado==0.12.1
 testpath==0.5.0
 threadpoolctl==3.1.0
 tomli==1.2.3
-torch==1.10.1+cu113
-torchaudio==0.10.1+cu113
+torch==1.10.2+cu113
+torchaudio==0.10.2+cu113
 torchmetrics==0.6.2
 torchsummary==1.5.1
-torchvision==0.11.2+cu113
+torchvision==0.11.3+cu113
 tornado==6.1
 tqdm==4.62.3
 traitlets==5.1.1
