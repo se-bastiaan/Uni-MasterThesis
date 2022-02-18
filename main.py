@@ -165,7 +165,7 @@ if __name__ == "__main__":
     parser.add_argument("--infer", action='store_true', default=False)
     parser.add_argument("--resume_checkpoint", type=str, default=None)
     parser.add_argument("--image_type", type=str, default="wood")
-    parser.add_argument("--dataset", type=str, default="./mvted-ad/")
+    parser.add_argument("--dataset", type=str, default="./mvtec-ad/")
     parser.add_argument("--image_size", type=int, default=None)
     parser.add_argument("--patch_size", type=int, default=16)
     parser.add_argument("--window_size", type=int, default=7)
