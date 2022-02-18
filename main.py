@@ -79,6 +79,7 @@ def main(args):
     mlflow.pytorch.autolog()
 
     dm = MVTecADDataModule(
+        args.dataset,
         args.image_type,
         args.image_size,
         args.patch_size,

@@ -1,17 +1,14 @@
 import os
-from typing import Tuple, Optional
+from typing import Optional
 
 from PIL import Image
 import numpy as np
 import cv2
 import random
-import torch
 
 from pytorch_lightning import LightningDataModule
 from torch.utils import data
 from torchvision import transforms
-
-BASE_PATH = "./mvtec-ad"
 
 TRAIN = "train"
 TEST = "test"
@@ -43,6 +40,7 @@ class MVTecADDataModule(LightningDataModule):
 
     def __init__(
         self,
+        dataset_path: str,
         image_type: str,
         image_size: int,
         patch_size: int,
@@ -53,6 +51,7 @@ class MVTecADDataModule(LightningDataModule):
         seed: int = 42,
     ):
         super().__init__()
+        self.dataset_path = dataset_path
         self.image_type = image_type
         self.patch_size = patch_size
         self.window_size = window_size
@@ -64,7 +63,7 @@ class MVTecADDataModule(LightningDataModule):
 
     def prepare_data(self) -> None:
         super().prepare_data()
-        image_dir = os.path.join(BASE_PATH, self.image_type)
+        image_dir = os.path.join(self.dataset_path, self.image_type)
         test_imgdir = os.path.join(image_dir, "test")
         test_labdir = os.path.join(image_dir, "ground_truth")
 
