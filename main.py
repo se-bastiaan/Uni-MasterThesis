@@ -43,7 +43,7 @@ def main(args):
     print("Sees device " + str(device))
 
     tb_logger = pl_loggers.TensorBoardLogger(
-        "logs/", name=f"{args.image_type}-{args.max_epochs}-{args.attention_type}"
+        f"{args.output_path}/logs/", name=f"{args.image_type}-{args.max_epochs}-{args.attention_type}"
     )
     loggers = [tb_logger]
 
@@ -63,7 +63,7 @@ def main(args):
 
     resume_checkpoint = None
     if args.resume_checkpoint is not None:
-        checkpoint_path = args.checkpoint_path + f"/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.resume_checkpoint}/checkpoints"
+        checkpoint_path = f"{args.output_path}/ckpt/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.resume_checkpoint}/checkpoints"
         files = [f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))]
         resume_checkpoint = join(checkpoint_path, files[-1])
 
@@ -92,7 +92,7 @@ def main(args):
     dm.prepare_data()
 
     if args.load_checkpoint is not None:
-        checkpoint_path = args.checkpoint_path + f"/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.load_checkpoint}/checkpoints"
+        checkpoint_path = f"{args.output_path}/ckpt/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.load_checkpoint}/checkpoints"
         files = [f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))]
         checkpoint_file = join(checkpoint_path, files[0])
         if args.infer:
@@ -160,7 +160,7 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser = pl.Trainer.add_argparse_args(parser)  # add built-in Trainer args
-    parser.add_argument("--checkpoint_path", type=str, default='./ckpt')
+    parser.add_argument("--output_path", type=str, default='./out')
     parser.add_argument("--load_checkpoint", type=str, default=None)
     parser.add_argument("--infer", action='store_true', default=False)
     parser.add_argument("--resume_checkpoint", type=str, default=None)
