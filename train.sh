@@ -9,7 +9,7 @@
 #SBATCH --gres=gpu:4
 #SBATCH --partition=csedu
 #SBATCH --mem=16G
-#SBATCH -N 1 -n 1
+#SBATCH -N 1 -n 4
 #
 
 source /ceph/csedu-scratch/project/sversteeg/venv/bin/activate

@@ -47,7 +47,7 @@ class MVTecADDataModule(LightningDataModule):
         window_size: int,
         train_ratio: float = 0.9,
         batch_size: int = 32,
-        num_workers: int = os.cpu_count(),
+        num_workers: int = 0,
         seed: int = 42,
     ):
         super().__init__()
