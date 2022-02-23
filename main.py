@@ -87,7 +87,6 @@ def main(args):
         args.train_ratio,
         args.batch_size,
         args.num_workers,
-        args.seed,
     )
     dm.prepare_data()
 

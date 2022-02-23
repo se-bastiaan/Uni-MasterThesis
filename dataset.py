@@ -48,7 +48,6 @@ class MVTecADDataModule(LightningDataModule):
         train_ratio: float = 0.9,
         batch_size: int = 32,
         num_workers: int = 0,
-        seed: int = 42,
     ):
         super().__init__()
         self.dataset_path = dataset_path
@@ -59,7 +58,6 @@ class MVTecADDataModule(LightningDataModule):
         self.train_ratio = train_ratio
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.seed = seed
 
     def prepare_data(self) -> None:
         super().prepare_data()
