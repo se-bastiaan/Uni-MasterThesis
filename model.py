@@ -410,12 +410,11 @@ class InTra(pl.LightningModule):
         self.test_artifacts["gt"].extend(gt_mask.detach().cpu().numpy())
         self.test_artifacts["labels"].append(gt_class)
 
-        cv2.imshow('image', self.test_artifacts["img"][0])
-        cv2.imshow('image_reconstruction', self.test_artifacts["reconst"][0])
-        cv2.imshow('image_mask', self.test_artifacts["gt"][0])
-        cv2.imshow('anomaly map', self.test_artifacts["amap"][0])
+        #cv2.imshow('image', self.test_artifacts["img"][0])
+        #cv2.imshow('image_reconstruction', self.test_artifacts["reconst"][0])
+        #cv2.imshow('image_mask', self.test_artifacts["gt"][0])
+        #cv2.imshow('anomaly map', self.test_artifacts["amap"][0])
         # cv2.imshow('heatmap', cv2.applyColorMap(self.test_artifacts["amap"][0], cv2.COLORMAP_JET))
-        cv2.waitKey(0)
+        #cv2.waitKey(0)
 
         return loss
-

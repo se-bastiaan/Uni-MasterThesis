@@ -44,7 +44,7 @@ def main(args):
 
     tb_logger = pl_loggers.TensorBoardLogger(
         f"{args.output_path}/logs/", name=f"{args.image_type}-{args.max_epochs}-{args.attention_type}"
-    )
+        )
     loggers = [tb_logger]
 
     checkpoint_best = ModelCheckpoint(
@@ -63,9 +63,9 @@ def main(args):
 
     resume_checkpoint = None
     if args.resume_checkpoint is not None:
-        checkpoint_path = f"{args.output_path}/ckpt/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.resume_checkpoint}/checkpoints"
+        checkpoint_path = f"{args.output_path}/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.resume_checkpoint}/checkpoints"
         files = [f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))]
-        resume_checkpoint = join(checkpoint_path, files[-1])
+        resume_checkpoint = join(checkpoint_path, "last.ckpt")
 
     trainer = pl.Trainer.from_argparse_args(
         args, gpus=-1, auto_select_gpus=False, strategy='ddp', logger=loggers, default_root_dir=args.output_path, resume_from_checkpoint=resume_checkpoint
@@ -73,10 +73,10 @@ def main(args):
     trainer.callbacks.append(checkpoint_last)
     trainer.callbacks.append(checkpoint_best)
     trainer.callbacks.append(
-        EarlyStopping(monitor="val_loss", min_delta=0.00, patience=50)
+        EarlyStopping(monitor="val_loss", min_delta=0.00, patience=args.patience)
     )
 
-    mlflow.pytorch.autolog()
+    #mlflow.pytorch.autolog()
 
     dm = MVTecADDataModule(
         args.dataset,
@@ -87,6 +87,7 @@ def main(args):
         args.train_ratio,
         args.batch_size,
         args.num_workers,
+        args.seed,
     )
     dm.prepare_data()
 
@@ -118,12 +119,12 @@ def main(args):
                         image_reassembled_arr = tensor2nparr(image_reassembled)
                         msgms_map_arr = tensor2nparr(msgms_map)
 
-                        cv2.imshow('image', data_arr[0])
-                        cv2.imshow('image_recon_arr', image_recon_arr[0])
-                        cv2.imshow('image_reassembled_arr', image_reassembled_arr[0])
-                        cv2.imshow('msgms_map_arr', msgms_map_arr[0])
-                        cv2.imshow('heatmap', cv2.applyColorMap(msgms_map_arr[0], cv2.COLORMAP_JET))
-                        cv2.waitKey(0)
+                        #cv2.imshow('image', data_arr[0])
+                        #cv2.imshow('image_recon_arr', image_recon_arr[0])
+                        #cv2.imshow('image_reassembled_arr', image_reassembled_arr[0])
+                        #cv2.imshow('msgms_map_arr', msgms_map_arr[0])
+                        #cv2.imshow('heatmap', cv2.applyColorMap(msgms_map_arr[0], cv2.COLORMAP_JET))
+                        #cv2.waitKey(0)
                 print(test_loss)
                 print(compute_auroc(0, np.array(amaps), np.array(gt)))
         else:
@@ -135,12 +136,12 @@ def main(args):
             ep_amap = (ep_amap - ep_amap.min()) / (ep_amap.max() - ep_amap.min())
             model.test_artifacts["amap"] = list(ep_amap)
 
-            cv2.imshow('image', model.test_artifacts["img"][0])
-            cv2.imshow('image_reconstruction', model.test_artifacts["reconst"][0])
-            cv2.imshow('image_mask', model.test_artifacts["gt"][0])
-            cv2.imshow('anomaly map', model.test_artifacts["amap"][0])
-            cv2.imshow('heatmap', cv2.applyColorMap(model.test_artifacts["amap"][0], cv2.COLORMAP_JET))
-            cv2.waitKey(0)
+            #cv2.imshow('image', model.test_artifacts["img"][0])
+            #cv2.imshow('image_reconstruction', model.test_artifacts["reconst"][0])
+            #cv2.imshow('image_mask', model.test_artifacts["gt"][0])
+            #cv2.imshow('anomaly map', model.test_artifacts["amap"][0])
+            #cv2.imshow('heatmap', cv2.applyColorMap(model.test_artifacts["amap"][0], cv2.COLORMAP_JET))
+            #cv2.waitKey(0)
 
             auroc = compute_auroc(
                 0,
@@ -173,6 +174,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--patience", type=int, default=50)
     parser.add_argument("--embed_dim", type=int, default=512)
     parser.add_argument("--num_layers", type=int, default=13)
     parser.add_argument("--num_heads", type=int, default=8)

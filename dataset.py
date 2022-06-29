@@ -23,13 +23,12 @@ class MVTecAD(data.Dataset):
         self.stage = stage
 
     def __len__(self):
-        return len(self.image_list) * (1 if self.stage == 'test' else 600)
+        return len(self.image_list)
 
     def __getitem__(self, index):
         image_index = index % len(self.image_list)
         image = Image.open(self.image_list[image_index]).convert("RGB")
         label = self.label_list[image_index]
-
         return self.transform(image), label
 
 
@@ -48,6 +47,7 @@ class MVTecADDataModule(LightningDataModule):
         train_ratio: float = 0.9,
         batch_size: int = 32,
         num_workers: int = 0,
+        seed: int = 42,
     ):
         super().__init__()
         self.dataset_path = dataset_path
@@ -58,6 +58,7 @@ class MVTecADDataModule(LightningDataModule):
         self.train_ratio = train_ratio
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.seed = seed
 
     def prepare_data(self) -> None:
         super().prepare_data()
@@ -93,7 +94,10 @@ class MVTecADDataModule(LightningDataModule):
         print("Amount of val images in dataset: ", len(val_image_list))
         print("Amount of val masks in dataset: ", len(val_mask_list))
 
-        train_image_list = train_image_list[:train_size]
+        # In the paper they are taking 600 patches per image
+        # We reproduce this by providing each image 600 times
+        # In the model this will result in 600 random windows for each image
+        train_image_list = train_image_list[:train_size] * 600
         train_mask_list = [
             (np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
         ] * len(train_image_list)
@@ -102,11 +106,11 @@ class MVTecADDataModule(LightningDataModule):
         print("Amount of train masks in dataset: ", len(train_mask_list))
 
         self.train_dataset = MVTecAD(
-            train_image_list,
+                train_image_list,
             train_mask_list,
             self._transform_train(),
             stage='train'
-        )
+            )
         self.val_dataset = MVTecAD(
             val_image_list,
             val_mask_list,
@@ -154,12 +158,12 @@ class MVTecADDataModule(LightningDataModule):
         ...
 
     def _transform_train(self):
+        rot = random.sample([0,90,180,270], 1)[0]
         return transforms.Compose(
             [
                 transforms.Resize((self.image_size, self.image_size)),
-                transforms.RandomVerticalFlip(p=0.25),
-                transforms.RandomHorizontalFlip(p=0.25),
-                transforms.RandomRotation(degrees=180),
+                #transforms.RandomHorizontalFlip(p=0.5),
+                #transforms.RandomRotation(degrees=(rot, rot)),
                 transforms.ToTensor(),
             ]
         )
