@@ -1,7 +1,7 @@
 #! /bin/bash
 #
 #SBATCH -J inpainting-transformer
-#SBATCH --time=7-00:00:00
+#SBATCH --time=UNLIMITED
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=sversteeg@science.ru.nl
 #SBATCH --gres=gpu:1
