@@ -104,12 +104,18 @@ def main(args):
     )
     dm.prepare_data()
 
-    if args.load_checkpoint is not None:
-        checkpoint_path = f"{args.output_path}/ckpt/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.load_checkpoint}/checkpoints"
-        files = [
-            f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))
+    if args.test:
+        checkpoint_file = None
+        checkpoint_path = f"{args.output_path}/{args.image_type}-{args.max_epochs}-{args.attention_type}/"
+        dirs = [
+            f for f in listdir(checkpoint_path) if not isfile(join(checkpoint_path, f))
         ]
-        checkpoint_file = join(checkpoint_path, files[0])
+        for dir in dirs:
+            files = [
+                f for f in listdir(join(checkpoint_path, dir, 'checkpoints')) if isfile(join(checkpoint_path, dir, 'checkpoints', f)) and 'best' in f
+            ]
+            if len(files) > 0:
+                checkpoint_file = join(checkpoint_path, dir, 'checkpoints', files[0])
         if args.infer:
             test_output_path = f"{args.output_path}/{args.image_type}-{args.max_epochs}-{args.attention_type}/images"
             mod = InTra.load_from_checkpoint(checkpoint_file)
@@ -198,8 +204,8 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser = pl.Trainer.add_argparse_args(parser)  # add built-in Trainer args
     parser.add_argument("--output_path", type=str, default="./out")
-    parser.add_argument("--load_checkpoint", type=str, default=None)
     parser.add_argument("--infer", action="store_true", default=False)
+    parser.add_argument("--test", action="store_true", default=False)
     parser.add_argument("--resume_checkpoint", type=str, default=None)
     parser.add_argument("--image_type", type=str, default="wood")
     parser.add_argument("--dataset", type=str, default="./mvtec-ad/")
