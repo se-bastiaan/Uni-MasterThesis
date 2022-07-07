@@ -61,6 +61,8 @@ def main(args):
         mode="min",
     )
 
+    early_stopping = EarlyStopping(monitor="val_loss", min_delta=0.00, patience=args.patience)
+
     resume_checkpoint = None
     if args.resume_checkpoint is not None:
         checkpoint_path = f"{args.output_path}/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.resume_checkpoint}/checkpoints"
@@ -68,13 +70,11 @@ def main(args):
         resume_checkpoint = join(checkpoint_path, "last.ckpt")
 
     trainer = pl.Trainer.from_argparse_args(
-        args, gpus=-1, auto_select_gpus=False, strategy='ddp', logger=loggers, default_root_dir=args.output_path, resume_from_checkpoint=resume_checkpoint
+        args, gpus=-1, auto_select_gpus=False, strategy='ddp', logger=loggers, default_root_dir=args.output_path
     )
     trainer.callbacks.append(checkpoint_last)
     trainer.callbacks.append(checkpoint_best)
-    trainer.callbacks.append(
-        EarlyStopping(monitor="val_loss", min_delta=0.00, patience=args.patience)
-    )
+    trainer.callbacks.append(early_stopping)
 
     #mlflow.pytorch.autolog()
 
@@ -152,7 +152,7 @@ def main(args):
 
     else:
         model = InTra(args)
-        trainer.fit(model, dm)
+        trainer.fit(model, dm, ckpt_path=resume_checkpoint)
         trainer.test(ckpt_path="best", datamodule=dm)
 
 
