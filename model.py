@@ -206,13 +206,7 @@ class InTraModel(nn.Module):
                 r = g(t, self.L) - max(0, g(t, self.L) + self.L - M - 1)
                 s = g(u, self.L) - max(0, g(u, self.L) + self.L - N - 1)
                 subgrid_input, subgrid_inpaint = self._process_subgrid(
-                    image,
-                    M,
-                    N,
-                    r,
-                    s,
-                    t,
-                    u
+                    image, M, N, r, s, t, u
                 )
                 patch_recon = self.forward(subgrid_input)
                 patches_recon.append(patch_recon)
@@ -259,9 +253,9 @@ class InTraModel(nn.Module):
         pos_embedding_glb_idx -= 1
 
         # pos_embedding_grid : [1, self.L*self.L, d_model]
-        pos_embedding = torch.zeros(1, self.L * self.L, self.pos_embedding.size(2)).type_as(
-            self.pos_embedding
-        )
+        pos_embedding = torch.zeros(
+            1, self.L * self.L, self.pos_embedding.size(2)
+        ).type_as(self.pos_embedding)
         for n in range(pos_embedding_glb_idx.size(1)):
             pos_embedding[:, n, :] = self.pos_embedding[
                 :, pos_embedding_glb_idx[:, n], :
@@ -401,20 +395,28 @@ class InTra(pl.LightningModule):
         img = batch[0]
         gt_mask, gt_class = batch[1]
 
-        loss, image_recon, image_reassembled, msgms_map = self.model._process_one_image(img, self._calculate_loss)
+        loss, image_recon, image_reassembled, msgms_map = self.model._process_one_image(
+            img, self._calculate_loss
+        )
 
-        self.test_artifacts["amap"].extend(msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy())
-        self.test_artifacts["img"].extend(img.permute(0, 2, 3, 1).detach().cpu().numpy())
-        self.test_artifacts["reconst"].extend(image_recon.permute(0, 2, 3, 1).detach().cpu().numpy())
+        self.test_artifacts["amap"].extend(
+            msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy()
+        )
+        self.test_artifacts["img"].extend(
+            img.permute(0, 2, 3, 1).detach().cpu().numpy()
+        )
+        self.test_artifacts["reconst"].extend(
+            image_recon.permute(0, 2, 3, 1).detach().cpu().numpy()
+        )
         # print(len(gt))
         self.test_artifacts["gt"].extend(gt_mask.detach().cpu().numpy())
         self.test_artifacts["labels"].append(gt_class)
 
-        #cv2.imshow('image', self.test_artifacts["img"][0])
-        #cv2.imshow('image_reconstruction', self.test_artifacts["reconst"][0])
-        #cv2.imshow('image_mask', self.test_artifacts["gt"][0])
-        #cv2.imshow('anomaly map', self.test_artifacts["amap"][0])
+        # cv2.imshow('image', self.test_artifacts["img"][0])
+        # cv2.imshow('image_reconstruction', self.test_artifacts["reconst"][0])
+        # cv2.imshow('image_mask', self.test_artifacts["gt"][0])
+        # cv2.imshow('anomaly map', self.test_artifacts["amap"][0])
         # cv2.imshow('heatmap', cv2.applyColorMap(self.test_artifacts["amap"][0], cv2.COLORMAP_JET))
-        #cv2.waitKey(0)
+        # cv2.waitKey(0)
 
         return loss

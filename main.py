@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from os import listdir
+from os import listdir, path
 from os.path import isfile, join
 
 import cv2
@@ -13,28 +13,31 @@ from tqdm import tqdm
 
 from dataset import MVTecADDataModule
 from model import InTra
-from utils import tensor2nparr, compute_auroc
+from utils import tensor2nparr, compute_auroc, get_basename
 
 IMAGE_SIZE = {
-    'carpet': 512,
-    'grid': 256,
-    'leather': 512,
-    'tile': 512,
-    'wood': 512,
-    'bottle': 256,
-    'cable': 256,
-    'capsule': 320,
-    'hazelnut': 256,
-    'metal_nut': 256,
-    'pill': 512,
-    'screw': 320,
-    'toothbrush': 256,
-    'transistor': 256,
-    'zipper': 512
+    "carpet": 512,
+    "grid": 256,
+    "leather": 512,
+    "tile": 512,
+    "wood": 512,
+    "bottle": 256,
+    "cable": 256,
+    "capsule": 320,
+    "hazelnut": 256,
+    "metal_nut": 256,
+    "pill": 512,
+    "screw": 320,
+    "toothbrush": 256,
+    "transistor": 256,
+    "zipper": 512,
 }
 
+
 def main(args):
-    args.image_size = args.image_size if args.image_size else IMAGE_SIZE[args.image_type]
+    args.image_size = (
+        args.image_size if args.image_size else IMAGE_SIZE[args.image_type]
+    )
 
     pl.seed_everything(args.seed)
     torch.backends.cudnn.benchmark = True
@@ -43,40 +46,50 @@ def main(args):
     print("Sees device " + str(device))
 
     tb_logger = pl_loggers.TensorBoardLogger(
-        f"{args.output_path}/logs/", name=f"{args.image_type}-{args.max_epochs}-{args.attention_type}"
-        )
+        f"{args.output_path}/logs/",
+        name=f"{args.image_type}-{args.max_epochs}-{args.attention_type}",
+    )
     loggers = [tb_logger]
 
     checkpoint_best = ModelCheckpoint(
-        filename='best-{epoch}-{step}-{val_loss:.5f}',
+        filename="best-{epoch}-{step}-{val_loss:.5f}",
         save_top_k=1,
         monitor="val_loss",
         mode="min",
     )
 
     checkpoint_last = ModelCheckpoint(
-        filename='last-{epoch}-{step}',
+        filename="last-{epoch}-{step}",
         save_last=True,
         monitor="val_loss",
         mode="min",
     )
 
-    early_stopping = EarlyStopping(monitor="val_loss", min_delta=0.00, patience=args.patience)
+    early_stopping = EarlyStopping(
+        monitor="val_loss", min_delta=0.00, patience=args.patience
+    )
 
     resume_checkpoint = None
     if args.resume_checkpoint is not None:
         checkpoint_path = f"{args.output_path}/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.resume_checkpoint}/checkpoints"
-        files = [f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))]
+        files = [
+            f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))
+        ]
         resume_checkpoint = join(checkpoint_path, "last.ckpt")
 
     trainer = pl.Trainer.from_argparse_args(
-        args, gpus=-1, auto_select_gpus=False, strategy='ddp', logger=loggers, default_root_dir=args.output_path
+        args,
+        gpus=-1,
+        auto_select_gpus=False,
+        strategy="ddp",
+        logger=loggers,
+        default_root_dir=args.output_path,
     )
     trainer.callbacks.append(checkpoint_last)
     trainer.callbacks.append(checkpoint_best)
     trainer.callbacks.append(early_stopping)
 
-    #mlflow.pytorch.autolog()
+    # mlflow.pytorch.autolog()
 
     dm = MVTecADDataModule(
         args.dataset,
@@ -93,9 +106,12 @@ def main(args):
 
     if args.load_checkpoint is not None:
         checkpoint_path = f"{args.output_path}/ckpt/{args.image_type}-{args.max_epochs}-{args.attention_type}/{args.load_checkpoint}/checkpoints"
-        files = [f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))]
+        files = [
+            f for f in listdir(checkpoint_path) if isfile(join(checkpoint_path, f))
+        ]
         checkpoint_file = join(checkpoint_path, files[0])
         if args.infer:
+            test_output_path = f"{args.output_path}/{args.image_type}-{args.max_epochs}-{args.attention_type}/images"
             mod = InTra.load_from_checkpoint(checkpoint_file)
             model = mod.model
             model.eval()
@@ -108,23 +124,45 @@ def main(args):
                 with tqdm(dm.test_dataloader(), unit="batch") as loader:
                     for data, label in loader:
                         data = data.to(device)
-                        loss, image_recon, image_reassembled, msgms_map = model._process_one_image(data, mod._calculate_loss)
+                        (
+                            loss,
+                            image_recon,
+                            image_reassembled,
+                            msgms_map,
+                        ) = model._process_one_image(data, mod._calculate_loss)
                         test_loss += loss.detach().cpu().numpy()
 
-                        gt.append(tensor2nparr(data))
-                        amaps.append(tensor2nparr(msgms_map))
+                        image_raw_arr = tensor2nparr(data)
+                        image_rec_arr = tensor2nparr(image_recon)
+                        image_pred_arr = tensor2nparr(msgms_map)
+                        image_pred_arr_th = image_pred_arr.copy()
+                        image_pred_arr_th[image_pred_arr_th < 128] = 0
 
-                        data_arr = tensor2nparr(data)
-                        image_recon_arr = tensor2nparr(image_recon)
-                        image_reassembled_arr = tensor2nparr(image_reassembled)
-                        msgms_map_arr = tensor2nparr(msgms_map)
+                        gt.append(image_raw_arr)
+                        amaps.append(image_pred_arr)
 
-                        #cv2.imshow('image', data_arr[0])
-                        #cv2.imshow('image_recon_arr', image_recon_arr[0])
-                        #cv2.imshow('image_reassembled_arr', image_reassembled_arr[0])
-                        #cv2.imshow('msgms_map_arr', msgms_map_arr[0])
-                        #cv2.imshow('heatmap', cv2.applyColorMap(msgms_map_arr[0], cv2.COLORMAP_JET))
-                        #cv2.waitKey(0)
+                        img_basename = [get_basename(x) for x in label[2]]
+                        cv2.imwrite(
+                            path.join(test_output_path, img_basename[0] + "_image.jpg"),
+                            image_raw_arr[0],
+                        )
+                        cv2.imwrite(
+                            path.join(test_output_path, img_basename[0] + "_recon.jpg"),
+                            image_rec_arr[0],
+                        )
+                        cv2.imwrite(
+                            path.join(test_output_path, img_basename[0] + "_pred_raw.jpg"),
+                            image_pred_arr[0],
+                        )
+                        cv2.imwrite(
+                            path.join(test_output_path, img_basename[0] + "_pred.jpg"),
+                            cv2.applyColorMap(image_pred_arr[0], cv2.COLORMAP_JET),
+                        )
+                        cv2.imwrite(
+                            path.join(test_output_path, img_basename[0] + "_pred_th.jpg"),
+                            cv2.applyColorMap(image_pred_arr_th[0], cv2.COLORMAP_JET),
+                        )
+
                 print(test_loss)
                 print(compute_auroc(0, np.array(amaps), np.array(gt)))
         else:
@@ -136,17 +174,17 @@ def main(args):
             ep_amap = (ep_amap - ep_amap.min()) / (ep_amap.max() - ep_amap.min())
             model.test_artifacts["amap"] = list(ep_amap)
 
-            #cv2.imshow('image', model.test_artifacts["img"][0])
-            #cv2.imshow('image_reconstruction', model.test_artifacts["reconst"][0])
-            #cv2.imshow('image_mask', model.test_artifacts["gt"][0])
-            #cv2.imshow('anomaly map', model.test_artifacts["amap"][0])
-            #cv2.imshow('heatmap', cv2.applyColorMap(model.test_artifacts["amap"][0], cv2.COLORMAP_JET))
-            #cv2.waitKey(0)
+            # cv2.imshow('image', model.test_artifacts["img"][0])
+            # cv2.imshow('image_reconstruction', model.test_artifacts["reconst"][0])
+            # cv2.imshow('image_mask', model.test_artifacts["gt"][0])
+            # cv2.imshow('anomaly map', model.test_artifacts["amap"][0])
+            # cv2.imshow('heatmap', cv2.applyColorMap(model.test_artifacts["amap"][0], cv2.COLORMAP_JET))
+            # cv2.waitKey(0)
 
             auroc = compute_auroc(
                 0,
                 np.array(model.test_artifacts["amap"]),
-                np.array(model.test_artifacts["gt"])
+                np.array(model.test_artifacts["gt"]),
             )
             print(auroc)
 
@@ -156,13 +194,12 @@ def main(args):
         trainer.test(ckpt_path="best", datamodule=dm)
 
 
-
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser = pl.Trainer.add_argparse_args(parser)  # add built-in Trainer args
-    parser.add_argument("--output_path", type=str, default='./out')
+    parser.add_argument("--output_path", type=str, default="./out")
     parser.add_argument("--load_checkpoint", type=str, default=None)
-    parser.add_argument("--infer", action='store_true', default=False)
+    parser.add_argument("--infer", action="store_true", default=False)
     parser.add_argument("--resume_checkpoint", type=str, default=None)
     parser.add_argument("--image_type", type=str, default="wood")
     parser.add_argument("--dataset", type=str, default="./mvtec-ad/")

@@ -16,7 +16,7 @@ VALIDATE = "validate"
 
 
 class MVTecAD(data.Dataset):
-    def __init__(self, image_list, label_list, transform, stage='train'):
+    def __init__(self, image_list, label_list, transform, stage="train"):
         self.image_list = image_list
         self.label_list = label_list
         self.transform = transform
@@ -72,10 +72,7 @@ class MVTecADDataModule(LightningDataModule):
         ]
 
         self.test_dataset = MVTecAD(
-            test_image_list,
-            test_mask_list,
-            self._transform_infer(),
-            stage='test'
+            test_image_list, test_mask_list, self._transform_infer(), stage="test"
         )
 
         train_imgdir = os.path.join(image_dir, os.path.join("train", "good"))
@@ -106,16 +103,10 @@ class MVTecADDataModule(LightningDataModule):
         print("Amount of train masks in dataset: ", len(train_mask_list))
 
         self.train_dataset = MVTecAD(
-                train_image_list,
-            train_mask_list,
-            self._transform_train(),
-            stage='train'
-            )
+            train_image_list, train_mask_list, self._transform_train(), stage="train"
+        )
         self.val_dataset = MVTecAD(
-            val_image_list,
-            val_mask_list,
-            self._transform_infer(),
-            stage='val'
+            val_image_list, val_mask_list, self._transform_infer(), stage="val"
         )
 
         print("Number of train patches in dataset: ", len(self.train_dataset))
@@ -158,12 +149,12 @@ class MVTecADDataModule(LightningDataModule):
         ...
 
     def _transform_train(self):
-        rot = random.sample([0,90,180,270], 1)[0]
+        rot = random.sample([0, 90, 180, 270], 1)[0]
         return transforms.Compose(
             [
                 transforms.Resize((self.image_size, self.image_size)),
-                #transforms.RandomHorizontalFlip(p=0.5),
-                #transforms.RandomRotation(degrees=(rot, rot)),
+                # transforms.RandomHorizontalFlip(p=0.5),
+                # transforms.RandomRotation(degrees=(rot, rot)),
                 transforms.ToTensor(),
             ]
         )

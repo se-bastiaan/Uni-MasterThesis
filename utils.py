@@ -1,7 +1,9 @@
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 from numpy import ndarray as NDArray
 from sklearn.metrics import roc_auc_score, roc_curve
+
 
 def tensor2nparr(tensor):
     np_arr = tensor.detach().cpu().numpy()
@@ -12,6 +14,13 @@ def tensor2nparr(tensor):
 def g(c, window_size=7):
     return max(1, c - int(window_size / 2))
 
+
+def get_basename(path):
+    return (
+        os.path.basename(os.path.dirname(path))
+        + "_"
+        + os.path.splitext(os.path.basename(path))[0]
+    )
 
 
 def compute_auroc(epoch: int, ep_reconst: NDArray, ep_gt: NDArray) -> float:
@@ -25,7 +34,9 @@ def compute_auroc(epoch: int, ep_reconst: NDArray, ep_gt: NDArray) -> float:
     """
 
     num_data = len(ep_reconst)
-    y_score = ep_reconst.reshape(num_data, -1).max(axis=1)  # y_score.shape -> (num_data,)
+    y_score = ep_reconst.reshape(num_data, -1).max(
+        axis=1
+    )  # y_score.shape -> (num_data,)
     y_true = ep_gt.reshape(num_data, -1).max(axis=1)  # y_true.shape -> (num_data,)
 
     score = roc_auc_score(y_true, y_score)
@@ -40,17 +51,22 @@ def compute_auroc(epoch: int, ep_reconst: NDArray, ep_gt: NDArray) -> float:
 
     return score
 
+
 def bilinears(images, shape) -> np.ndarray:
     import cv2
+
     N = images.shape[0]
     new_shape = (N,) + shape
     ret = np.zeros(new_shape, dtype=images.dtype)
     for i in range(N):
-        ret[i] = cv2.resize(images[i], dsize=shape[::-1], interpolation=cv2.INTER_LINEAR)
+        ret[i] = cv2.resize(
+            images[i], dsize=shape[::-1], interpolation=cv2.INTER_LINEAR
+        )
     return ret
 
+
 def detection_auroc(labels, anomaly_scores):
-    labels = np.asarray(labels, dtype=np.dtype('object,int'))['f1']
+    labels = np.asarray(labels, dtype=np.dtype("object,int"))["f1"]
     auroc = roc_auc_score(labels, anomaly_scores)
     return auroc
 

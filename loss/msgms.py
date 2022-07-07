@@ -15,7 +15,9 @@ class MSGMSLoss(Module):
         self.prewitt_x, self.prewitt_y = self._create_prewitt_kernel()
         self.mean_filter = torch.ones((1, 1, 21, 21)) / (21 * 21)
 
-    def forward(self, img1: Tensor, img2: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(
+        self, img1: Tensor, img2: Tensor, as_loss: bool = True
+    ) -> Tuple[Tensor, Tensor]:
 
         if not self.prewitt_x.is_cuda or not self.prewitt_y.is_cuda:
             self.prewitt_x = self.prewitt_x.type_as(img1)
@@ -36,7 +38,13 @@ class MSGMSLoss(Module):
                 gms_map, size=(h, w), mode="bilinear", align_corners=False
             )
 
-        msgms_loss = torch.mean(1 - msgms_map / self.num_scales)
+        if as_loss:
+            msgms_loss = torch.mean(1 - msgms_map / self.num_scales)
+        else:
+            msgms_loss = torch.mean(1 - msgms_map / self.num_scales, axis=1).unsqueeze(
+                1
+            )
+
         msgms_map = torch.mean(1 - msgms_map / self.num_scales, dim=1, keepdim=True)
         msgms_map = F.conv2d(msgms_map, self.mean_filter, stride=1, padding=10)
         return msgms_loss, msgms_map
