@@ -13,7 +13,6 @@
 source /ceph/csedu-scratch/project/sversteeg/venv/bin/activate
 which python
 echo "Image type: ${IMAGE_TYPE}"
-echo "Max epochs: ${EPOCHS}"
 echo "Attention type: ${ATTENTION_TYPE}"
 echo "Checkpoint version: ${CHECKPOINT}"
-python main.py --resume_checkpoint ${CHECKPOINT} --image_type ${IMAGE_TYPE} --max_epochs ${EPOCHS} --attention_type ${ATTENTION_TYPE} --dataset /ceph/csedu-scratch/project/sversteeg/mvtec-ad/ --output_path /ceph/csedu-scratch/project/sversteeg/output
+python main.py --resume_checkpoint ${CHECKPOINT} --image_type ${IMAGE_TYPE} --max_epochs 20000 --attention_type ${ATTENTION_TYPE} --dataset /ceph/csedu-scratch/project/sversteeg/mvtec-ad/ --output_path /ceph/csedu-scratch/project/sversteeg/output
