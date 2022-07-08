@@ -47,6 +47,7 @@ class MSGMSLoss(Module):
 
         msgms_map = torch.mean(1 - msgms_map / self.num_scales, dim=1, keepdim=True)
         msgms_map = F.conv2d(msgms_map, self.mean_filter, stride=1, padding=10)
+
         return msgms_loss, msgms_map
 
     def _gms(self, img1: Tensor, img2: Tensor) -> Tensor:

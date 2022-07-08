@@ -29,7 +29,8 @@ class MVTecAD(data.Dataset):
         image_index = index % len(self.image_list)
         image = Image.open(self.image_list[image_index]).convert("RGB")
         label = self.label_list[image_index]
-        return self.transform(image), label
+        # Return the image and the label which consists of the mask, anomaly or not (0 vs 1) and the file path
+        return self.transform(image), (label[1], label[2], self.image_list[image_index])
 
 
 class MVTecADDataModule(LightningDataModule):
@@ -75,6 +76,9 @@ class MVTecADDataModule(LightningDataModule):
             test_image_list, test_mask_list, self._transform_infer(), stage="test"
         )
 
+        print("Amount of test images in dataset: ", len(test_image_list))
+        print("Amount of test masks in dataset: ", len(test_mask_list))
+
         train_imgdir = os.path.join(image_dir, os.path.join("train", "good"))
         train_image_list = self._get_image_list(train_imgdir)
         random.shuffle(train_image_list)
@@ -110,14 +114,14 @@ class MVTecADDataModule(LightningDataModule):
         )
 
         print("Number of train patches in dataset: ", len(self.train_dataset))
-        print("Number of val patches in dataset: ", len(self.train_dataset))
+        print("Number of val patches in dataset: ", len(self.val_dataset))
 
     def train_dataloader(self):
         return data.DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
-            shuffle=False,
+            shuffle=False,  # We shuffle in the previous steps when creating self.train_dataset
         )
 
     def val_dataloader(self):
@@ -204,11 +208,15 @@ class MVTecADDataModule(LightningDataModule):
                 (self.image_size, self.image_size),
                 interpolation=cv2.INTER_NEAREST,
             )
-            mask[mask >= 1] = 1
-            return mask, 1
+            mask[mask != 0] = 1
+            return truth_imagepath, mask, 1
         else:
             print("Mask does not exist: ", test_imgpath)
-            return np.zeros(shape=(self.image_size, self.image_size)), 0
+            return (
+                truth_imagepath,
+                np.zeros(shape=(self.image_size, self.image_size)),
+                0,
+            )
 
 
 def _imshow(x_0):

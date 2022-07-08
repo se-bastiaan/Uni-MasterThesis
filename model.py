@@ -1,6 +1,7 @@
 from argparse import Namespace
 
 import cv2
+import numpy as np
 import pytorch_lightning as pl
 import torch
 from einops import rearrange
@@ -338,6 +339,7 @@ class InTra(pl.LightningModule):
             "reconst": [],
             "gt": [],
             "amap": [],
+            "scores": [],
             "labels": [],
         }
 
@@ -393,15 +395,18 @@ class InTra(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         img = batch[0]
-        gt_mask, gt_class = batch[1]
+        gt_mask, gt_class, filename = batch[1]
 
         loss, image_recon, image_reassembled, msgms_map = self.model._process_one_image(
             img, self._calculate_loss
         )
 
-        self.test_artifacts["amap"].extend(
-            msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy()
-        )
+        ep_amap = msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy()
+        ep_amap = (ep_amap - ep_amap.min()) / (ep_amap.max() - ep_amap.min())
+        ep_amap = np.array(ep_amap)
+
+        self.test_artifacts["amap"].extend(ep_amap)
+        self.test_artifacts["scores"].append(np.amax(ep_amap))
         self.test_artifacts["img"].extend(
             img.permute(0, 2, 3, 1).detach().cpu().numpy()
         )
@@ -410,7 +415,7 @@ class InTra(pl.LightningModule):
         )
         # print(len(gt))
         self.test_artifacts["gt"].extend(gt_mask.detach().cpu().numpy())
-        self.test_artifacts["labels"].append(gt_class)
+        self.test_artifacts["labels"].append(gt_class.detach().cpu().numpy()[0])
 
         # cv2.imshow('image', self.test_artifacts["img"][0])
         # cv2.imshow('image_reconstruction', self.test_artifacts["reconst"][0])
