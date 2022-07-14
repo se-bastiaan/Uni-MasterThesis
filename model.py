@@ -1,3 +1,4 @@
+import os
 from argparse import Namespace
 
 import cv2
@@ -12,7 +13,7 @@ from torchsummary import summary
 from torchvision import utils
 
 from loss import InTraLoss
-from utils import g
+from utils import g, get_basename, tensor2nparr
 
 
 class InTraModel(nn.Module):
@@ -334,6 +335,9 @@ class InTra(pl.LightningModule):
             input_size=(512, 512),
         )
 
+        self.test_output_path = f"{self.hparams.output_path}/images/{self.hparams.image_type}-{self.hparams.max_epochs}-{self.hparams.attention_type}"
+        os.makedirs(self.test_output_path, exist_ok=True)
+
         self.test_artifacts = {
             "img": [],
             "reconst": [],
@@ -401,21 +405,74 @@ class InTra(pl.LightningModule):
             img, self._calculate_loss
         )
 
-        ep_amap = msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy()
-        ep_amap = (ep_amap - ep_amap.min()) / (ep_amap.max() - ep_amap.min())
-        ep_amap = np.array(ep_amap)
+        print(msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy())
+        print("sec")
+        print(tensor2nparr(msgms_map))
 
-        self.test_artifacts["amap"].extend(ep_amap)
-        self.test_artifacts["scores"].append(np.amax(ep_amap))
-        self.test_artifacts["img"].extend(
-            img.permute(0, 2, 3, 1).detach().cpu().numpy()
+        msgms_map = msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy()
+        msgms_map = (msgms_map - msgms_map.min()) / (
+            msgms_map.max() - msgms_map.min()
+        )  # normalize anomaly map
+        msgms_map = np.array(msgms_map)
+
+        print(
+            "min-max img",
+            np.min(img.permute(0, 2, 3, 1).detach().cpu().numpy()),
+            np.max(img.permute(0, 2, 3, 1).detach().cpu().numpy()),
         )
-        self.test_artifacts["reconst"].extend(
-            image_recon.permute(0, 2, 3, 1).detach().cpu().numpy()
+        print(
+            "min-max img",
+            np.min(image_recon.permute(0, 2, 3, 1).detach().cpu().numpy()),
+            np.max(image_recon.permute(0, 2, 3, 1).detach().cpu().numpy()),
         )
+        print("min-max msgms", np.min(msgms_map), np.max(msgms_map))
+
+        image_label = gt_class.detach().cpu().numpy()[0]
+        image_mask = gt_mask.detach().cpu().numpy()
+        image_raw_arr = 255 * img.permute(0, 2, 3, 1).detach().cpu().numpy()
+        image_rec_arr = 255 * image_recon.permute(0, 2, 3, 1).detach().cpu().numpy()
+        image_pred_arr = msgms_map
+        image_pred_arr_th = image_pred_arr.copy() * 255  # Threshold anomaly map
+        image_pred_arr_th[image_pred_arr_th < 128] = 0
+        print("min-max mask", np.min(image_mask), np.max(image_mask))
+
+        img_basename = [get_basename(x) for x in filename]
+        cv2.imwrite(
+            os.path.join(self.test_output_path, img_basename[0] + "_image.jpg"),
+            cv2.cvtColor(image_raw_arr[0], cv2.COLOR_RGB2BGR),
+        )
+        cv2.imwrite(
+            os.path.join(self.test_output_path, img_basename[0] + "_recon.jpg"),
+            cv2.cvtColor(image_rec_arr[0], cv2.COLOR_RGB2BGR),
+        )
+        cv2.imwrite(
+            os.path.join(self.test_output_path, img_basename[0] + "_pred_raw.jpg"),
+            (255 * msgms_map[0]).astype(np.uint8),
+        )
+        cv2.imwrite(
+            os.path.join(self.test_output_path, img_basename[0] + "_pred.jpg"),
+            cv2.applyColorMap((255 * msgms_map[0]).astype(np.uint8), cv2.COLORMAP_HOT),
+        )
+        cv2.imwrite(
+            os.path.join(self.test_output_path, img_basename[0] + "_pred_th.jpg"),
+            cv2.applyColorMap(image_pred_arr_th[0].astype(np.uint8), cv2.COLORMAP_HOT),
+        )
+
+        self.test_artifacts["amap"].extend(msgms_map)
+
+        self.test_artifacts["scores"].append(np.max(msgms_map))
+        self.test_artifacts["img"].extend(image_raw_arr)
+        self.test_artifacts["reconst"].extend(image_rec_arr)
         # print(len(gt))
-        self.test_artifacts["gt"].extend(gt_mask.detach().cpu().numpy())
-        self.test_artifacts["labels"].append(gt_class.detach().cpu().numpy()[0])
+        self.test_artifacts["gt"].extend(image_mask)
+        self.test_artifacts["labels"].append(image_label)
+
+        # cv2.imwrite(
+        #     os.path.join(
+        #         test_output_path, img_basename[0] + "_pred_th.jpg"
+        #     ),
+        #     cv2.applyColorMap(image_pred_arr_th[0], cv2.COLORMAP_HOT),
+        # )
 
         # cv2.imshow('image', self.test_artifacts["img"][0])
         # cv2.imshow('image_reconstruction', self.test_artifacts["reconst"][0])

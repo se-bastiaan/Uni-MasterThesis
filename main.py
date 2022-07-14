@@ -123,127 +123,43 @@ def main(args):
             ]
             if len(files) > 0:
                 checkpoint_file = join(checkpoint_path, dir, "checkpoints", files[0])
-        if args.infer:
-            test_output_path = f"{args.output_path}/images/{args.image_type}-{args.max_epochs}-{args.attention_type}"
-            os.makedirs(test_output_path, exist_ok=True)
-            mod = InTra.load_from_checkpoint(checkpoint_file)
-            model = mod.model
-            model.eval()
 
-            test_loss = 0
-            amaps = []
-            gt = []
-            labels = []
+        model = InTra.load_from_checkpoint(checkpoint_file)
+        result = trainer.test(model, datamodule=dm)
 
-            with torch.no_grad():
-                with tqdm(dm.test_dataloader(), unit="batch") as loader:
-                    for data, label in loader:
-                        data = data.to(device)
-                        image_label = label[1].detach().cpu().numpy()[0]
-                        image_mask = label[0].detach().cpu().numpy()
-                        image_path = label[2]
+        # cv2.imshow('image', model.test_artifacts["img"][0])
+        # cv2.imshow('image_reconstruction', model.test_artifacts["reconst"][0])
+        # cv2.imshow('image_mask', model.test_artifacts["gt"][0])
+        # cv2.imshow('anomaly map', model.test_artifacts["amap"][0])
+        # cv2.waitKey(0)
 
-                        labels.append(image_label)
+        print(model.test_artifacts["scores"])
+        print(model.test_artifacts["labels"])
+        print(np.array(model.test_artifacts["scores"]).shape)
+        print(np.array(model.test_artifacts["labels"]).shape)
+        print(np.array(model.test_artifacts["amap"]).shape)
 
-                        (
-                            loss,
-                            image_recon,
-                            image_reassembled,
-                            msgms_map,
-                        ) = model._process_one_image(data, mod._calculate_loss)
-                        test_loss += loss.detach().cpu().numpy()
-
-                        ep_amap = tensor2nparr(msgms_map)
-                        ep_amap = (ep_amap - ep_amap.min()) / (
-                            ep_amap.max() - ep_amap.min()
-                        )
-                        msgms_map = np.array(ep_amap)
-
-                        msgms_map = (
-                            msgms_map.astype(np.float64) / msgms_map.max()
-                        )  # normalize the data to 0 - 1
-                        msgms_map = 255 * msgms_map  # Now scale by 255
-                        msgms_map = msgms_map.astype(np.uint8)
-
-                        image_raw_arr = tensor2nparr(data)
-                        image_rec_arr = tensor2nparr(image_recon)
-                        image_pred_arr = msgms_map
-                        image_pred_arr_th = (
-                            image_pred_arr.copy()
-                        )  # Threshold anomaly map
-                        image_pred_arr_th[image_pred_arr_th < 128] = 0
-
-                        gt.append(image_mask)
-                        amaps.append(image_pred_arr)
-
-                        img_basename = [get_basename(x) for x in image_path]
-                        cv2.imwrite(
-                            path.join(test_output_path, img_basename[0] + "_image.jpg"),
-                            image_raw_arr[0],
-                        )
-                        cv2.imwrite(
-                            path.join(test_output_path, img_basename[0] + "_recon.jpg"),
-                            image_rec_arr[0],
-                        )
-                        cv2.imwrite(
-                            path.join(
-                                test_output_path, img_basename[0] + "_pred_raw.jpg"
-                            ),
-                            image_pred_arr[0],
-                        )
-                        cv2.imwrite(
-                            path.join(test_output_path, img_basename[0] + "_pred.jpg"),
-                            cv2.applyColorMap(image_pred_arr[0], cv2.COLORMAP_HOT),
-                        )
-                        cv2.imwrite(
-                            path.join(
-                                test_output_path, img_basename[0] + "_pred_th.jpg"
-                            ),
-                            cv2.applyColorMap(image_pred_arr_th[0], cv2.COLORMAP_HOT),
-                        )
-
-                        # cv2.imshow('image', image_raw_arr[0])
-                        # cv2.imshow('image_reconstruction', image_rec_arr[0])
-                        # cv2.imshow('image_mask', image_mask[0])
-                        # cv2.imshow('anomaly map', image_pred_arr[0])
-                        # cv2.imshow('anomaly map 2', cv2.applyColorMap(image_pred_arr[0], cv2.COLORMAP_HOT))
-                        # # cv2.imshow('anomaly map th', cv2.applyColorMap(image_pred_arr_th[0], cv2.COLORMAP_HOT))
-                        # cv2.waitKey(0)
-
-                print("Loss:" + str(test_loss))
-                print("Amaps: " + str(len(amaps)))
-                print("Gt: " + str(len(gt)))
-
-                # print("AUROC:" + str(compute_auroc(0, np.array(amaps), np.array(gt))))
-
-                metrics = compute_pixelwise_retrieval_metrics(
-                    np.array(amaps), np.array(gt)
-                )
-                print(metrics)
-        else:
-            model = InTra.load_from_checkpoint(checkpoint_file)
-            result = trainer.test(model, datamodule=dm)
-
-            # cv2.imshow('image', model.test_artifacts["img"][0])
-            # cv2.imshow('image_reconstruction', model.test_artifacts["reconst"][0])
-            # cv2.imshow('image_mask', model.test_artifacts["gt"][0])
-            # cv2.imshow('anomaly map', model.test_artifacts["amap"][0])
-            # cv2.waitKey(0)
-
-            print(np.max(model.test_artifacts["scores"]))
-            print(model.test_artifacts["labels"])
-
+        try:
             detection_metrics = compute_imagewise_retrieval_metrics(
                 model.test_artifacts["scores"], model.test_artifacts["labels"]
             )
             print(detection_metrics)
+        except Exception as e:
+            print(e)
 
-            metrics = compute_pixelwise_retrieval_metrics(
-                np.array(model.test_artifacts["amap"]),
-                np.array(model.test_artifacts["gt"]),
+        try:
+            detection_metrics = compute_imagewise_retrieval_metrics(
+                model.test_artifacts["scores"], model.test_artifacts["labels"]
             )
-            print(metrics)
+            print(detection_metrics)
+        except Exception as e:
+            print(e)
 
+        metrics = compute_pixelwise_retrieval_metrics(
+            np.array(model.test_artifacts["amap"]),
+            np.array(model.test_artifacts["gt"]),
+        )
+        print(metrics)
     else:
         model = InTra(args)
         trainer.fit(model, dm, ckpt_path=resume_checkpoint)
