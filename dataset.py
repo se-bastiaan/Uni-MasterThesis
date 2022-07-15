@@ -97,6 +97,12 @@ class MVTecADDataModule(LightningDataModule):
         print("Amount of val images in dataset: ", len(val_image_list))
         print("Amount of val masks in dataset: ", len(val_mask_list))
 
+        simple_train_image_list = train_image_list[:train_size]
+        simple_train_mask_list = [
+            (image, np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
+            for image in train_image_list
+        ]
+
         # In the paper they are taking 600 patches per image
         # We reproduce this by providing each image 600 times
         # In the model this will result in 600 random windows for each image
@@ -111,6 +117,12 @@ class MVTecADDataModule(LightningDataModule):
 
         self.train_dataset = MVTecAD(
             train_image_list, train_mask_list, self._transform_train(), stage="train"
+        )
+        self.simple_train_dataset = MVTecAD(
+            simple_train_image_list,
+            simple_train_mask_list,
+            self._transform_infer(),
+            stage="test",
         )
         self.val_dataset = MVTecAD(
             val_image_list, val_mask_list, self._transform_infer(), stage="val"
@@ -137,7 +149,7 @@ class MVTecADDataModule(LightningDataModule):
 
     def test_dataloader(self):
         return data.DataLoader(
-            self.train_dataset if self.use_train_for_test else self.test_dataset,
+            self.simple_train_dataset if self.use_train_for_test else self.test_dataset,
             batch_size=1,
             num_workers=self.num_workers,
             shuffle=False,

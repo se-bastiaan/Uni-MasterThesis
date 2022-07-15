@@ -467,9 +467,7 @@ class InTra(pl.LightningModule):
             )
             cv2.imwrite(
                 os.path.join(self.test_output_path, img_basename[0] + "_anomap.jpg"),
-                cv2.applyColorMap(
-                    (255 * anomap[0]).astype(np.uint8), cv2.COLORMAP_HOT
-                ),
+                cv2.applyColorMap((255 * anomap[0]).astype(np.uint8), cv2.COLORMAP_HOT),
             )
             cv2.imwrite(
                 os.path.join(self.test_output_path, img_basename[0] + "_pred_th.jpg"),
