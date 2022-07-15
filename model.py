@@ -419,10 +419,11 @@ class InTra(pl.LightningModule):
             msgms_map.max() - msgms_map.min()
         )  # normalize anomaly map
         msgms_map = np.array(msgms_map)
+        anomap = msgms_map
 
         if self.train_diff:
             print("has train diff", msgms_map.shape, self.train_diff.shape)
-            msgms_map = np.power(msgms_map - self.train_diff, 2)
+            anomap = np.power(msgms_map - self.train_diff, 2)
 
         # print(
         #     "min-max img",
@@ -465,15 +466,20 @@ class InTra(pl.LightningModule):
                 ),
             )
             cv2.imwrite(
+                os.path.join(self.test_output_path, img_basename[0] + "_anomap.jpg"),
+                cv2.applyColorMap(
+                    (255 * anomap[0]).astype(np.uint8), cv2.COLORMAP_HOT
+                ),
+            )
+            cv2.imwrite(
                 os.path.join(self.test_output_path, img_basename[0] + "_pred_th.jpg"),
                 cv2.applyColorMap(
                     image_pred_arr_th[0].astype(np.uint8), cv2.COLORMAP_HOT
                 ),
             )
 
-        self.test_artifacts["amap"].extend(msgms_map)
-
-        self.test_artifacts["scores"].append(np.max(msgms_map))
+        self.test_artifacts["amap"].extend(anomap)
+        self.test_artifacts["scores"].append(np.max(anomap))
         self.test_artifacts["img"].extend(image_raw_arr)
         self.test_artifacts["reconst"].extend(image_rec_arr)
         # print(len(gt))
