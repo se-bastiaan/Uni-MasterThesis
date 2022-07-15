@@ -37,6 +37,7 @@ class MVTecADDataModule(LightningDataModule):
     test_dataset = []
     train_dataset = []
     val_dataset = []
+    simple_train_dataset = []
 
     def __init__(
         self,
@@ -62,74 +63,78 @@ class MVTecADDataModule(LightningDataModule):
         self.seed = seed
         self.use_train_for_test = False
 
-    def prepare_data(self) -> None:
-        super().prepare_data()
+    def setup(self, stage: Optional[str] = None) -> None:
+        print("DataModule setup, stage: ", stage)
         image_dir = os.path.join(self.dataset_path, self.image_type)
-        test_imgdir = os.path.join(image_dir, "test")
-        test_labdir = os.path.join(image_dir, "ground_truth")
-
-        test_image_list = self._get_image_list(test_imgdir)
-        test_mask_list = [
-            self._get_image_mask(test_imgdir, test_labdir, x) for x in test_image_list
-        ]
-
-        self.test_dataset = MVTecAD(
-            test_image_list, test_mask_list, self._transform_infer(), stage="test"
-        )
-
-        print("Amount of test images in dataset: ", len(test_image_list))
-        print("Amount of test masks in dataset: ", len(test_mask_list))
 
         train_imgdir = os.path.join(image_dir, os.path.join("train", "good"))
         train_image_list = self._get_image_list(train_imgdir)
         random.shuffle(train_image_list)
 
-        train_size = len(train_image_list) - min(
-            20, int(len(train_image_list) * (1 - self.train_ratio))
-        )
+        if stage == "fit" or stage is None:
+            train_size = len(train_image_list) - min(
+                20, int(len(train_image_list) * (1 - self.train_ratio))
+            )
 
-        val_image_list = train_image_list[train_size:]
-        val_mask_list = [
-            (image, np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
-            for image in val_image_list
-        ]
+            val_image_list = train_image_list[train_size:]
+            val_mask_list = [
+                (image, np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
+                for image in val_image_list
+            ]
 
-        print("Amount of val images in dataset: ", len(val_image_list))
-        print("Amount of val masks in dataset: ", len(val_mask_list))
+            print("Amount of val images in dataset: ", len(val_image_list))
+            print("Amount of val masks in dataset: ", len(val_mask_list))
 
-        simple_train_image_list = train_image_list[:train_size]
-        simple_train_mask_list = [
-            (image, np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
-            for image in train_image_list
-        ]
+            # In the paper they are taking 600 patches per image
+            # We reproduce this by providing each image 600 times
+            # In the model this will result in 600 random windows for each image
+            train_image_list = train_image_list[:train_size] * 600
+            train_mask_list = [
+                (image, np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
+                for image in train_image_list
+            ]
 
-        # In the paper they are taking 600 patches per image
-        # We reproduce this by providing each image 600 times
-        # In the model this will result in 600 random windows for each image
-        train_image_list = train_image_list[:train_size] * 600
-        train_mask_list = [
-            (image, np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
-            for image in train_image_list
-        ]
+            print("Amount of train images in dataset: ", len(train_image_list))
+            print("Amount of train masks in dataset: ", len(train_mask_list))
 
-        print("Amount of train images in dataset: ", len(train_image_list))
-        print("Amount of train masks in dataset: ", len(train_mask_list))
+            self.train_dataset = MVTecAD(
+                train_image_list, train_mask_list, self._transform_train(), stage="train"
+            )
+            self.val_dataset = MVTecAD(
+                val_image_list, val_mask_list, self._transform_infer(), stage="val"
+            )
 
-        self.train_dataset = MVTecAD(
-            train_image_list, train_mask_list, self._transform_train(), stage="train"
-        )
-        self.simple_train_dataset = MVTecAD(
-            simple_train_image_list,
-            simple_train_mask_list,
-            self._transform_infer(),
-            stage="test",
-        )
-        self.val_dataset = MVTecAD(
-            val_image_list, val_mask_list, self._transform_infer(), stage="val"
-        )
+            print("Number of train patches in dataset: ", len(self.train_dataset))
+            print("Number of val patches in dataset: ", len(self.val_dataset))
 
-        print("Number of train patches in dataset: ", len(self.train_dataset))
-        print("Number of val patches in dataset: ", len(self.val_dataset))
+        if stage == "test" or stage is None:
+            simple_train_image_list = train_image_list.copy()
+            simple_train_mask_list = [
+                (image, np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
+                for image in train_image_list
+            ]
+            self.simple_train_dataset = MVTecAD(
+                simple_train_image_list,
+                simple_train_mask_list,
+                self._transform_infer(),
+                stage="test",
+            )
+
+            images_dir = os.path.join(image_dir, "test")
+            masks_dir = os.path.join(image_dir, "ground_truth")
+            test_image_list = self._get_image_list(images_dir)
+            test_mask_list = [
+                self._get_image_mask(images_dir, masks_dir, x) for x in test_image_list
+            ]
+
+            print("Amount of test images in dataset: ", len(test_image_list))
+            print("Amount of test masks in dataset: ", len(test_mask_list))
+
+            self.test_dataset = MVTecAD(
+                test_image_list, test_mask_list, self._transform_infer(), stage="test"
+            )
+
+
 
     def train_dataloader(self):
         return data.DataLoader(

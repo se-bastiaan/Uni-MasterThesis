@@ -107,7 +107,7 @@ def main(args):
         args.num_workers,
         args.seed,
     )
-    dm.prepare_data()
+    dm.setup("test" if args.test else "fit")
 
     if args.test:
         checkpoint_file = None
@@ -126,7 +126,7 @@ def main(args):
 
         train_model = InTra.load_from_checkpoint(checkpoint_file)
         dm.use_train_for_test = True
-        trainer.test(train_model, datamodule=dm)
+        trainer.test(train_model, dm)
 
         average_train_diff = np.sum(
             np.array(train_model.test_artifacts["amap"]), axis=0
