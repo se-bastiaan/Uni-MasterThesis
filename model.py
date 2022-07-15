@@ -421,7 +421,7 @@ class InTra(pl.LightningModule):
         msgms_map = np.array(msgms_map)
         anomap = msgms_map
 
-        if self.train_diff:
+        if self.train_diff is not None:
             print("has train diff", msgms_map.shape, self.train_diff.shape)
             anomap = np.power(msgms_map - self.train_diff, 2)
 
