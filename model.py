@@ -330,10 +330,15 @@ class InTra(pl.LightningModule):
             attention_type=self.hparams.attention_type,
         )
 
-        summary(
-            self.model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu")),
-            input_size=(512, 512),
-        )
+        self.save_images = False
+        self.train_diff = None
+
+        self.model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+
+        # summary(
+        #     self.model,
+        #     input_size=(512, 512),
+        # )
 
         self.test_output_path = f"{self.hparams.output_path}/images/{self.hparams.image_type}-{self.hparams.max_epochs}-{self.hparams.attention_type}"
         os.makedirs(self.test_output_path, exist_ok=True)
@@ -405,9 +410,9 @@ class InTra(pl.LightningModule):
             img, self._calculate_loss
         )
 
-        print(msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy())
-        print("sec")
-        print(tensor2nparr(msgms_map))
+        # print(msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy())
+        # print("sec")
+        # print(tensor2nparr(msgms_map))
 
         msgms_map = msgms_map.permute(0, 2, 3, 1).detach().cpu().numpy()
         msgms_map = (msgms_map - msgms_map.min()) / (
@@ -415,17 +420,21 @@ class InTra(pl.LightningModule):
         )  # normalize anomaly map
         msgms_map = np.array(msgms_map)
 
-        print(
-            "min-max img",
-            np.min(img.permute(0, 2, 3, 1).detach().cpu().numpy()),
-            np.max(img.permute(0, 2, 3, 1).detach().cpu().numpy()),
-        )
-        print(
-            "min-max img",
-            np.min(image_recon.permute(0, 2, 3, 1).detach().cpu().numpy()),
-            np.max(image_recon.permute(0, 2, 3, 1).detach().cpu().numpy()),
-        )
-        print("min-max msgms", np.min(msgms_map), np.max(msgms_map))
+        if self.train_diff:
+            print("has train diff", msgms_map.shape, self.train_diff.shape)
+            msgms_map = np.power(msgms_map - self.train_diff, 2)
+
+        # print(
+        #     "min-max img",
+        #     np.min(img.permute(0, 2, 3, 1).detach().cpu().numpy()),
+        #     np.max(img.permute(0, 2, 3, 1).detach().cpu().numpy()),
+        # )
+        # print(
+        #     "min-max img",
+        #     np.min(image_recon.permute(0, 2, 3, 1).detach().cpu().numpy()),
+        #     np.max(image_recon.permute(0, 2, 3, 1).detach().cpu().numpy()),
+        # )
+        # print("min-max msgms", np.min(msgms_map), np.max(msgms_map))
 
         image_label = gt_class.detach().cpu().numpy()[0]
         image_mask = gt_mask.detach().cpu().numpy()
@@ -434,29 +443,33 @@ class InTra(pl.LightningModule):
         image_pred_arr = msgms_map
         image_pred_arr_th = image_pred_arr.copy() * 255  # Threshold anomaly map
         image_pred_arr_th[image_pred_arr_th < 128] = 0
-        print("min-max mask", np.min(image_mask), np.max(image_mask))
 
-        img_basename = [get_basename(x) for x in filename]
-        cv2.imwrite(
-            os.path.join(self.test_output_path, img_basename[0] + "_image.jpg"),
-            cv2.cvtColor(image_raw_arr[0], cv2.COLOR_RGB2BGR),
-        )
-        cv2.imwrite(
-            os.path.join(self.test_output_path, img_basename[0] + "_recon.jpg"),
-            cv2.cvtColor(image_rec_arr[0], cv2.COLOR_RGB2BGR),
-        )
-        cv2.imwrite(
-            os.path.join(self.test_output_path, img_basename[0] + "_pred_raw.jpg"),
-            (255 * msgms_map[0]).astype(np.uint8),
-        )
-        cv2.imwrite(
-            os.path.join(self.test_output_path, img_basename[0] + "_pred.jpg"),
-            cv2.applyColorMap((255 * msgms_map[0]).astype(np.uint8), cv2.COLORMAP_HOT),
-        )
-        cv2.imwrite(
-            os.path.join(self.test_output_path, img_basename[0] + "_pred_th.jpg"),
-            cv2.applyColorMap(image_pred_arr_th[0].astype(np.uint8), cv2.COLORMAP_HOT),
-        )
+        if self.save_images:
+            img_basename = [get_basename(x) for x in filename]
+            cv2.imwrite(
+                os.path.join(self.test_output_path, img_basename[0] + "_image.jpg"),
+                cv2.cvtColor(image_raw_arr[0], cv2.COLOR_RGB2BGR),
+            )
+            cv2.imwrite(
+                os.path.join(self.test_output_path, img_basename[0] + "_recon.jpg"),
+                cv2.cvtColor(image_rec_arr[0], cv2.COLOR_RGB2BGR),
+            )
+            cv2.imwrite(
+                os.path.join(self.test_output_path, img_basename[0] + "_pred_raw.jpg"),
+                (255 * msgms_map[0]).astype(np.uint8),
+            )
+            cv2.imwrite(
+                os.path.join(self.test_output_path, img_basename[0] + "_pred.jpg"),
+                cv2.applyColorMap(
+                    (255 * msgms_map[0]).astype(np.uint8), cv2.COLORMAP_HOT
+                ),
+            )
+            cv2.imwrite(
+                os.path.join(self.test_output_path, img_basename[0] + "_pred_th.jpg"),
+                cv2.applyColorMap(
+                    image_pred_arr_th[0].astype(np.uint8), cv2.COLORMAP_HOT
+                ),
+            )
 
         self.test_artifacts["amap"].extend(msgms_map)
 

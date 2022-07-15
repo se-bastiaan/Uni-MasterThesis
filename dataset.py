@@ -60,6 +60,7 @@ class MVTecADDataModule(LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.seed = seed
+        self.use_train_for_test = False
 
     def prepare_data(self) -> None:
         super().prepare_data()
@@ -89,8 +90,9 @@ class MVTecADDataModule(LightningDataModule):
 
         val_image_list = train_image_list[train_size:]
         val_mask_list = [
-            (np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
-        ] * len(val_image_list)
+            (image, np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
+            for image in val_image_list
+        ]
 
         print("Amount of val images in dataset: ", len(val_image_list))
         print("Amount of val masks in dataset: ", len(val_mask_list))
@@ -100,8 +102,9 @@ class MVTecADDataModule(LightningDataModule):
         # In the model this will result in 600 random windows for each image
         train_image_list = train_image_list[:train_size] * 600
         train_mask_list = [
-            (np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
-        ] * len(train_image_list)
+            (image, np.zeros((self.image_size, self.image_size), dtype=np.uint8), 0)
+            for image in train_image_list
+        ]
 
         print("Amount of train images in dataset: ", len(train_image_list))
         print("Amount of train masks in dataset: ", len(train_mask_list))
@@ -134,7 +137,7 @@ class MVTecADDataModule(LightningDataModule):
 
     def test_dataloader(self):
         return data.DataLoader(
-            self.test_dataset,
+            self.train_dataset if self.use_train_for_test else self.test_dataset,
             batch_size=1,
             num_workers=self.num_workers,
             shuffle=False,

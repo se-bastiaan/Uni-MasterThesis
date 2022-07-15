@@ -124,8 +124,25 @@ def main(args):
             if len(files) > 0:
                 checkpoint_file = join(checkpoint_path, dir, "checkpoints", files[0])
 
+        train_model = InTra.load_from_checkpoint(checkpoint_file)
+        dm.use_train_for_test = True
+        trainer.test(train_model, datamodule=dm)
+
+        average_train_diff = np.sum(
+            np.array(train_model.test_artifacts["amap"]), axis=0
+        ) / len(train_model.test_artifacts["amap"])
+        print(
+            "train diff min-max", np.min(average_train_diff), np.max(average_train_diff)
+        )
+
+        del train_model
+        torch.cuda.empty_cache()
+
         model = InTra.load_from_checkpoint(checkpoint_file)
-        result = trainer.test(model, datamodule=dm)
+        model.save_images = True
+        model.train_diff = average_train_diff
+        dm.use_train_for_test = False
+        trainer.test(model, datamodule=dm)
 
         # cv2.imshow('image', model.test_artifacts["img"][0])
         # cv2.imshow('image_reconstruction', model.test_artifacts["reconst"][0])
