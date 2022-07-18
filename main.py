@@ -164,14 +164,6 @@ def main(args):
         except Exception as e:
             print(e)
 
-        try:
-            detection_metrics = compute_imagewise_retrieval_metrics(
-                model.test_artifacts["scores"], model.test_artifacts["labels"]
-            )
-            print(detection_metrics)
-        except Exception as e:
-            print(e)
-
         metrics = compute_pixelwise_retrieval_metrics(
             np.array(model.test_artifacts["amap"]),
             np.array(model.test_artifacts["gt"]),

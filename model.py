@@ -423,7 +423,7 @@ class InTra(pl.LightningModule):
 
         if self.train_diff is not None:
             print("has train diff", msgms_map.shape, self.train_diff.shape)
-            anomap = np.power(msgms_map - self.train_diff, 2)
+            anomap = np.power(msgms_map - self.train_diff.reshape((msgms_map.shape[0], msgms_map.shape[1], msgms_map.shape[2])), 2)
 
         # print(
         #     "min-max img",
