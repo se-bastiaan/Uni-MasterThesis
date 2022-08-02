@@ -1,3 +1,31 @@
 \chapter{Introduction}\label{ch:introduction}
 
-Introduce the topic of the thesis, including research questions.
+The detection of deviations in data is an important topic in multiple fields. Examples of these include medical imaging \cite{han_madgan_2021}, surveillance \cite{shashikar_traffic_2017} and manufacturing \cite{susto_anomaly_2017}. These types of anomaly detection aim to find irregularities in different types of images.
+
+\improvement{Elaborate more on why anomaly detection is useful exactly}
+
+Notably self-supervised anomaly detection is an approach that has been explored recently \cite{li_cutpaste_2021, ali_self-supervised_2020}. This type of machine learning means that we use unlabeled data to train our models. We can use examples of normal situations to be able to reconstruct full images where the anomaly has been removed. This allows us to compare a source image to a reconstruction and find any anomalies. This method using image inpainting has been implemented using various methods like generative adversarial networks (GANs) \cite{yeh_semantic_2017} and transformers \cite{pirnay_inpainting_2021}.
+
+
+Transformers \cite{vaswani_attention_2017} are a type of model that is based on self-attention. This attention processes a lot of context, which makes the training of these types of models slow. Therefore different implementations have been explored, like linear transformers \cite{katharopoulos_transformers_2020}, fastformers \cite{wu_fastformer_2021} and linformers \cite{wang_linformer_2020}.
+
+Since the linear transformers seem to have some performance improvement over the vanilla transformers we see an opportunity to use these newer type of transformer in the context of image inpainting for anomaly detection. We propose to use the method used by Pirnay et al. \cite{pirnay_inpainting_2021} but replace the used transformer by the linear transformer introduced by Katharopoulos et al. \cite{katharopoulos_transformers_2020}. Thus we ask:
+
+\textit{What is the effect on the performance and efficiency of using linear transformers in an inpainting context for anomaly detection when compared to regular transformers?}
+
+To be able to compare the different models we ask a few subquestions:
+\todo{Need to rephrase and change questions if necessary based on data}
+\begin{itemize}
+    % inpainting/anomaly detection
+    \item What are easy and hard cases for the model?
+    \item Are there correlations between hard and easy cases?
+    % performance/efficiency
+    \item How does the training time compare between images?
+    \item How does the training time compare between different types of models?
+    % linear vs regular
+    \item How do our results compare to previous work?
+\end{itemize}
+
+We will answer this by doing an in-depth analysis of using linear transformers compared to regular transformers.
+
+\improvement{Insert section about thesis structure in general}

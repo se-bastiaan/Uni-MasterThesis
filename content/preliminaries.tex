@@ -1,15 +1,14 @@
 \chapter{Preliminaries}\label{ch:preliminaries}
 
 \section{Types of machine learning}
-\label{sec:types-of-machine-learning}
+\label{sec:prelim:types-of-machine-learning}
 
 There are different approaches to machine learning. In this section we will introduce a few of these approaches to give context for our research.
 
-\todo{Possibly add semi-supervised learning as well?}
 
 \subsection{Supervised learning}
 
-Supervised learnin\cite{mohri_foundations_2012} is a type of machine learning that always uses a labeled dataset. This means that for each point in the dataset we already know what class or rank it belongs to. It is the common type of learning used with problems that require classification, regression or ranking. The known samples are used to train a model and to make predictions for data points that the model has not seen yet.
+Supervised learning \cite{mohri_foundations_2012} is a type of machine learning that always uses a labeled dataset. This means that for each point in the dataset we already know what class or rank it belongs to. It is the common type of learning used with problems that require classification, regression or ranking. The known samples are used to train a model and to make predictions for data points that the model has not seen yet.
 
 An example would be making predictions about images of animals. Each image would be labeled with the type of animal that is in the picture. We would be learning our models using that data to be able to predict the type of animals in pictures that the model has never seen before.
 
@@ -21,14 +20,12 @@ An example of this type would be clustering people by known information like age
 
 \subsection{Self-supervised learning}
 
-The type of machine learning that we use in this thesis is a form of self-supervised learning\cite{doersch_multi-task_2017}. This means that we generate our own labels from a dataset without any manual work required. This is possible by removing or modifying part of the input data and then learn a model to recover the original data. We can measure the performance based on the difference between the original data and the result. This type of learning can be seen as a combination of unsupervised and supervised learning.
+The type of machine learning that we use in this thesis is a form of self-supervised learning \cite{doersch_multi-task_2017}. This means that we generate our own labels from a dataset without any manual work required. This is possible by removing or modifying part of the input data and then learn a model to recover the original data. We can measure the performance based on the difference between the original data and the result. This type of learning can be seen as a combination of unsupervised and supervised learning.
 
 An example is a model that tries to predict words in a certain context. We have a sentence: 'The most popular food from France is the croissant'. We can then leave out the word 'croissant' and train a model to predict the word based on the words surrounding it.
 
-\todo{Add section about recurrent neural networks for completeness?}
-
 \section{Transformers}
-\label{sec:transformers}
+\label{sec:prelim:transformers}
 
 The type of model used in our research is a transformer. In this section we will introduce the attention mechanism, explain how this is used in different types of transformers and what kind of transformer we are using.
 
@@ -38,7 +35,7 @@ In 2017 Vaswani et al.\cite{vaswani_attention_2017} introduced the transformer m
 
 \subsubsection{Architecture}
 
-The transformer model uses the same encoder-decoder structure used in the models it was compared to in the original paper\cite{bahdanau_neural_2016, cho_learning_2014}. This means that the model consists of two parts: an encoder and a decoder.
+The transformer model uses the same encoder-decoder structure used in the models it was compared to in the original paper \cite{bahdanau_neural_2016, cho_learning_2014}. This means that the model consists of two parts: an encoder and a decoder.
 
 The encoder takes an input representation $(x_1,...x_n)$ and transforms this to an intermediary representation $(z_1,...z_n)$. This intermediary representation is then used as input for the decoder to create an output $(y_1,...,y_n)$.
 
@@ -46,24 +43,24 @@ The encoder takes an input representation $(x_1,...x_n)$ and transforms this to 
 \caption{The original transformer architecture from \cite{vaswani_attention_2017}}
 \centering
 \includegraphics[width=0.5\textwidth]{transformer.png}
-\label{fig:transformer-architecture}
+\label{fig:prelim:transformer-architecture}
 \end{figure}
 
 \paragraph{Encoder}
 The encoder part in the architecture is a stack of $N$ layers. All the layers are the same and consist of two sub-layers: the multi-head self-attention and a fully-connected feed-forward network (FFN) that is fully connected. After both sub-layers we apply layer normalisation\cite{ba_layer_2016} and add residual connections\cite{he_deep_2015} around the sub-layers. This means that the output of a layer in the encoder is calculated as follows: 
-\begin{align*}
+\begin{align}
 &selfAtt = LayerNorm(input + SelfAtt(input_q, input_k, input_))\\
 &out = LayerNorm(selfAtt + FFN(selfAtt))
-\end{align*}
+\end{align}
 
 
 \paragraph{Decoder}
 Similar to the encoder the decoder is a stack of $N$ layers. Compared to the encoder it adds a third sub-layer that applies multi-head cross attention to the output from the encoder layers and the first sub-layer of the decoder. In comparison to the encoder the first self-attention sub-layer we mask out earlier positions in the output sequence to stop predictions for a certain position $i$ to depend on the outputs at the positions before position $i$. The residual connections and layer normalisation on each sub-layer is identical to the architecture of the encoder. This results in the following calculations for each decoder layer: 
-\begin{align*}
+\begin{align}
 &selfAtt = LayerNorm(input + MaskedSelfAtt(in_q, in_k, in_v))\\
 &crossAtt = LayerNorm(selfAtt + CrossAtt(selfAtt_q, enc_k, enc_v))\\
 &out = LayerNorm(crossAtt + FFN(crossAtt))
-\end{align*}
+\end{align}
 
 The final layers consist of a linear fully connected neural network and a Softmax layer. This allows us to have a higher number of possible outputs than the size of the input and output embeddings since it projects the output of the decoder part into a probability vector.
 
@@ -71,67 +68,99 @@ The final layers consist of a linear fully connected neural network and a Softma
 
 As explained in the previous paragraphs we use attention in the model. This mechanism, which takes query, keys and values vector as input, outputs a vector containing a weighted sum of the values. Each of the output values uses a weight that is calculated using a compatibility  function of the query and the key in each position.
 
-The attention mechanism from \cite{vaswani_attention_2017} is called 'Scaled Dot-Product Attention' and calculates attention using matrices $Q$ (queries), $K$ (keys) of dimensiion $d_k$ and $V$ (values) of dimension $d_v$ that consist of multiple vectors:
-\begin{align*}
-&Attention(Q, K, V) = softmax(\frac{QK^T} {sqrt(d_k)})V
-\end{align*}
+The attention mechanism \cite{vaswani_attention_2017} is called 'Scaled Dot-Product Attention' and calculates attention using matrices $Q$ (queries), $K$ (keys) of dimensiion $d_k$ and $V$ (values) of dimension $d_v$ that consist of multiple vectors:
+\begin{align}
+\label{eq:prelim:softmax-attention}
+&Attention(Q, K, V) = softmax(\frac{QK^T} {\sqrt{d_k}})V
+\end{align}
 
 To be able to apply the attention to more than one representation space we use multi-headed attention. This uses $h$ parallel layers that all attend to a smaller part of the full dimension. In the case of the original papers $h = 8$ and the dimension of each attention head becomes $d_k = d_v = d_{model} / h = 64$. This makes the multi-headed attention similar to single-head attention with the full dimension when we look at the computational cost.
 
 To do this we learn different linear projections that we project all queries, keys and values to.  All the separate outputs of the different attention heads are concatenated and projected which gives us the final output.
 
-\begin{align*}
+\begin{align}
 &MultiHead(Q, K, V) = Concat(head_1, ..., head_h)W^O\\
 & where\ head_i = Attention(QW_i^Q, KW_i^K, VW_i^V)
-\end{align*}
+\end{align}
 
 
 \subsection{Vision transformers}
 
-As mentioned in the previous section transformers were originally meant for translation tasks. The success of the transformer in that context is what made Dosovitskiy et al.\cite{dosovitskiy_image_2021} start exploring the usage of the attention-based model for computer vision tasks as well.
+As mentioned in the previous section transformers were originally meant for translation tasks. The success of the transformer in that context is what made Dosovitskiy et al. \cite{dosovitskiy_image_2021} start exploring the usage of the attention-based model for computer vision tasks as well.
 
 Their approach tries to use the original transformer implementation as much as possible. This means that they had to introduce an intermediate step to be able to use the images as input for the model.
 
-The original model is designed to receive a 1D input of token embeddings. The images are 2D and each image has the shape $x \in \mathbb{R}^{HxWxC}$ where $H$ and $W$ are the height and width of the image respectively and $C$ is the number of channels. To be able to use the images as input they split the image in square patches with the resolution $(P, P)$. This results in $N = HW/P^2$ patches $x_p \in \mathbb{R}^{N \times (P^2 \cdot C)}$.
+The original model is designed to receive a 1D input of token embeddings. The images are 2D and each image has the shape $x \in \mathbb{R}^{H x W x C}$ where $H$ and $W$ are the height and width of the image respectively and $C$ is the number of channels. To be able to use the images as input they split the image in square patches with the resolution $(P, P)$. This results in $N = HW/P^2$ patches $x_p \in \mathbb{R}^{N \times (P^2 \cdot C)}$.
 
 Since the transformer uses the same dimensions in all layers flattening the patches and mapping them to the dimension by training a linear projection which gives us our patch embeddings. To this sequence of patch embeddings a learnable embedding is prepended. To be able to preserve the positions of the patches they add positional embeddings to the patch embeddings.
 
 \subsection{Linear transformers}
 
-\cite{katharopoulos_transformers_2020}
+Since transformers use attention to process so many parts of the images the memory and time complexity of the model is $O(N^2)$. One of the proposed solutions to reduce the complexity of the models is made by Katharopoulos et al. \cite{katharopoulos_transformers_2020}. They introduce the linear transformer that according to their results can reach similar performance when compared to vanilla transformers with the benefit of being faster. 
 
-transformers are RNNs
+They show that we can rewrite the attention calculation for each row $i$ a matrix to a generalised version without specifying the similarity function.
 
-this changes the softmax to a linear calculation so that the complexity of the the transformers is decreased
+\begin{align}
+&Attention(Q, K, V) = V'
+\end{align}
 
-\iffalse
 
-\fi
+\begin{align}
+&V'_i =\frac{\sum_{j-1} ^{N} sim(Q_i, K_j) V_j}{\sum_{j-1} ^{N} sim(Q_i, K_j)}
+\end{align}
 
+This equation is equivalent to equation \ref{eq:prelim:softmax-attention} when we say $sim(q, k) = exp(\frac{q^Tk}{\sqrt{D}})$.
+
+Since this definition is generic they introduce the feature representation $\phi(x)$ and rewrite the attention function to ultimately be
+
+\begin{align}
+    &V'_i = \frac{\phi(Q_i)^T\sum_{j=1}^{N} \phi(K_j)V_j^T}{\phi(Q_i)^T\sum_{j=1}^{N} \phi(K_j)}
+\end{align}
+
+Since we can compute $\sum_{j=1}^{N} \phi(K_j)V_j^T$ and $sum_{j=1}^{N} \phi(K_j)$ can be computed once and re-used for all the queries the complexity of the equation is now $O(n)$ when using a feature map.
 
 \section{Image inpainting}
-\label{sec:image-inpainting}
+\label{sec:prelim:image-inpainting}
 
+To be able to detect anomalies without labeling a large dataset we are using a semi-supervised method using image inpainting.
 
+Inpainting is the process of filling in missing, damaged or censored parts in paintings or images. It can also be used for object removal or manipulation.
+Applying the technique on digital images can be done using different approaches.
 
-\iffalse
+\begin{figure}[h!]
+\caption{An example of image restoration using inpainting from Bertalmio et al. \cite{bertalmio_image_2000}}
+\centering
+\includegraphics[width=\textwidth]{imgs/inpainting-example.jpeg}
+\label{fig:prelim:inpainting-example}
+\end{figure}
 
-\fi
+In figure \ref{fig:prelim:inpainting-example} we see a photo that is restored by using a context based inpainting method.
+
+Our transformer based approach, the Inpainting Transformer (InTra) from Pirnay et al. \cite{pirnay_inpainting_2021} learns to paint regions that are removed from the original images. This allows the models to fully reconstruct an image based on the surrounding patches.
+
+\begin{figure}[h!]
+\caption{The original overview of the inpainting transformer from \cite{pirnay_inpainting_2021}}
+\centering
+\includegraphics[width=\textwidth]{imgs/inpainting-transformer.png}
+\label{fig:prelim:intra-overview}
+\end{figure}
 
 
 \section{Anomaly detection}
-\label{sec:anomaly-detection}
+\label{sec:prelim:anomaly-detection}
+
+Anomaly detection is the detection of outliers, points that have extreme values compared to the rest, in a dataset.
+This kind of detection can be useful in different environments. Examples are intrusion detection in security and fault detection in industrial systems.
+
+\begin{figure}[h!]
+\caption{An example of outliers in a scatter plot}
+\centering
+\includegraphics[width=\textwidth]{imgs/outliers-example.png}
+\label{fig:prelim:outliers-example}
+\end{figure}
+
+In our case we are looking at anomalies in manufacturing. We want to find defects in images of objects and textures.
 
 
-
-\iffalse
-
-\fi
-
-
-
-\iffalse
-- Unsupervised learning
-- Anomaly detection
-- Transformers
-\fi
+ 
+\improvement{Add section about image similarity}
