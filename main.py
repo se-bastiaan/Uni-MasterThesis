@@ -130,12 +130,17 @@ def main(args):
         dm.use_train_for_test = True
         trainer.test(train_model, dm)
 
-        average_train_diff = np.sum(
-            np.array(train_model.test_artifacts["amap"]), axis=0
-        ) / len(train_model.test_artifacts["amap"])
-        print(
-            "train diff min-max", np.min(average_train_diff), np.max(average_train_diff)
-        )
+        if isfile(f"{args.output_path}/{args.image_type}-{args.max_epochs}-{args.attention_type}/average_train_diff.npy"):
+            average_train_diff = np.load(
+                f"{args.output_path}/{args.image_type}-{args.max_epochs}-{args.attention_type}/average_train_diff.npy", allow_pickle=True)
+        else:
+            average_train_diff = np.sum(
+                np.array(train_model.test_artifacts["amap"]), axis=0
+            ) / len(train_model.test_artifacts["amap"])
+            print(
+                "train diff min-max", np.min(average_train_diff), np.max(average_train_diff)
+            )
+            np.save(f"{args.output_path}/{args.image_type}-{args.max_epochs}-{args.attention_type}/average_train_diff.npy", average_train_diff)
 
         del train_model
         torch.cuda.empty_cache()
