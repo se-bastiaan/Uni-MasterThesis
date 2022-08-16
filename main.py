@@ -124,6 +124,8 @@ def main(args):
             if len(files) > 0:
                 checkpoint_file = join(checkpoint_path, dir, "checkpoints", files[0])
 
+        print(f"Using checkpoint file {checkpoint_file}")
+
         train_model = InTra.load_from_checkpoint(checkpoint_file)
         dm.use_train_for_test = True
         trainer.test(train_model, dm)
