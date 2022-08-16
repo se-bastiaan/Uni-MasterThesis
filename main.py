@@ -156,19 +156,36 @@ def main(args):
         print(np.array(model.test_artifacts["labels"]).shape)
         print(np.array(model.test_artifacts["amap"]).shape)
 
+        detection_file = f"det-result-{args.attention_type}.npy"
+        segmentation_file = f"seg-result-{args.attention_type}.npy"
+
+        detection_results = {}
+        if isfile(detection_file):
+            detection_results = dict(enumerate(np.load(detection_file).flatten(), 1))
+
         try:
             detection_metrics = compute_imagewise_retrieval_metrics(
                 model.test_artifacts["scores"], model.test_artifacts["labels"]
             )
             print(detection_metrics)
+            detection_results[args.image_type] = detection_metrics
         except Exception as e:
             print(e)
+
+        segmentation_results = {}
+        if isfile(segmentation_file):
+            segmentation_results = dict(
+                enumerate(np.load(segmentation_file).flatten(), 1))
 
         metrics = compute_pixelwise_retrieval_metrics(
             np.array(model.test_artifacts["amap"]),
             np.array(model.test_artifacts["gt"]),
         )
+        segmentation_results[args.image_type] = metrics
         print(metrics)
+
+        np.save(segmentation_file, np.array(segmentation_results))
+        np.save(detection_file, np.array(detection_results))
     else:
         model = InTra(args)
         trainer.fit(model, dm, ckpt_path=resume_checkpoint)
