@@ -1,12 +1,12 @@
 #! /bin/bash
 #
 #SBATCH -J inpainting-transformer-validate
-#SBATCH --time=0-02:00:00
+#SBATCH --time=0-12:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=sversteeg@science.ru.nl
 #SBATCH --gres=gpu:1
 #SBATCH --partition=csedu
-#SBATCH --mem=20G
+#SBATCH --mem=16G
 #SBATCH -N 1 -n 4
 #
 
