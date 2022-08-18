@@ -168,7 +168,7 @@ def main(args):
 
         detection_results = {}
         if isfile(detection_file):
-            detection_results = dict(enumerate(np.load(detection_file, allow_pickle=True).flatten(), 1))
+            detection_results = dict(enumerate(np.load(detection_file, allow_pickle=True).flatten(), 1))[1]
 
         try:
             detection_metrics = compute_imagewise_retrieval_metrics(
@@ -182,7 +182,7 @@ def main(args):
         segmentation_results = {}
         if isfile(segmentation_file):
             segmentation_results = dict(
-                enumerate(np.load(segmentation_file, allow_pickle=True).flatten(), 1))
+                enumerate(np.load(segmentation_file, allow_pickle=True).flatten(), 1))[1]
 
         metrics = compute_pixelwise_retrieval_metrics(
             np.array(model.test_artifacts["amap"]),
