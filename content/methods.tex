@@ -3,20 +3,21 @@
 In this chapter we will introduce our dataset, the structure of the model, our metrics and evaluation approach to be able to compare different inpainting transformer based models.
 
 \section{Data}
+\label{sec:experimental-setup:data}
 
-We use the MVTec AD dataset that we previously mentioned in section \ref{sec:relwork:anomaly-detection}. This dataset is also used by other researchers \cite{pirnay_inpainting_2021, bergmann_improving_2019, zavrtanik_reconstruction_2021} to compare the performance of methods for anomaly detection. The dataset focuses on industrial anomalies, which can be used for both the detection and the segmentation or localisation of anomalies. The dataset contains 15 different images, categorised into textures and objects. Some of the images are photos taken in 1 place and orientation, while others contain different rotations or positioning. This variation makes it  The images with defects in the dataset are labeled by anomaly type and  segmentation maps are provided for localisation of the anomalies in those images.
+We use the MVTec AD dataset that we previously mentioned in section \ref{sec:relwork:anomaly-detection}. This dataset is also used by other researchers \cite{pirnay_inpainting_2021, bergmann_improving_2019, zavrtanik_reconstruction_2021} to compare the performance of methods for anomaly detection. The dataset focuses on industrial anomalies, which can be used for both the detection and the segmentation or localisation of anomalies. The dataset contains 15 different images, categorised into textures and objects. Some of the images are photos taken in 1 place and orientation, while others contain different rotations or positioning. This variation makes it suitable to evaluate the variety of images a model can be used for. The images with defects in the dataset are labelled by anomaly type and  segmentation maps are provided for localisation of the anomalies in those images.
 
 \begin{figure}[h!]
-\caption{An example of a screw, toothbrush and transistor that are defective.}
 \centering
 \includegraphics[width=\textwidth]{imgs/mvtec-example-objects.jpg}
+\caption{An example of a screw, toothbrush and transistor that are defective.}
 \label{fig:experimental-setup:objects-example}
 \end{figure}
 
 \begin{figure}[h!]
-\caption{An example of a piece of leather, tile and grid that are defective.}
 \centering
 \includegraphics[width=\textwidth]{imgs/mvtec-example-textures.jpg}
+\caption{An example of a piece of leather, tile and grid that are defective.}
 \label{fig:experimental-setup:textures-example}
 \end{figure}
 
@@ -28,6 +29,7 @@ In figure \ref{fig:experimental-setup:objects-example} we see three different ob
 Our inpainting transformer model is directly based on the inpainting transformer by Pirnay et al. \cite{pirnay_inpainting_2021}. For completeness we will introduce the patch embeddings used for the inpainting problem and give an overview of the model architecture.
 
 \subsection{Patch embeddings}
+\label{subsec:experimental-setup:patch-embeddings}
 
 The model uses a patch based approach to create full reconstructions of images. Each image is split into patches of which one is covered. The model then learns to inpaint that patch based on the surrounding patches. The creation of the patches is similar to the approach discussed in section \ref{sec:prelim:transformers:vision}. An overview of these step can be found in figure \ref{fig:experimental-setup:intra-overview}a.
 
@@ -76,9 +78,9 @@ The architecture for our inpainting model uses $n$ blocks of the transformer enc
 It consists of an attention function and a fully-connected feed-forward network. This follows the approach of the Vision Transformer discussed in section \ref{sec:prelim:transformers:vision}. The structure of this model is visualised in figure \ref{fig:experimental-setup:model-structure}.
 
 \begin{figure}[ht!]
-\caption{The structure of our inpainting model}
 \centering
 \includegraphics[width=\textwidth]{imgs/model-structure.pdf}
+\caption{The structure of our inpainting model}
 \label{fig:experimental-setup:model-structure}
 \end{figure}
 
@@ -121,7 +123,7 @@ L(P, \hat{P}) = L_2(P, \hat{P}) + \alpha \; L_{MSGMS}(P, \hat{P}) + \beta \; L_{
 
 with $\alpha$ and $\beta$ being loss weights for the MSGMS and SSIM losses.
 
-\section{Anomaly detection}\label{sec:methods-setup-ad}
+\section{Anomaly detection}\label{sec:methods:anomaly-detection}
 
 To be able to use our model for anomaly detection we need to generate a complete reconstruction of some original input image. This reconstruction can then be used to create a anomaly map where we can locate any anomalies.
 
@@ -143,6 +145,7 @@ s = pad(u) - max(0, pad(u) + L - M - 1)
 Reconstructing the image can now be done by using the calculated windows for each patch. This gives us the fully reconstructed image $\hat{x}$.
 
 \subsection{Anomaly map}
+\label{subsec:experimental-setup:anomaly-map}
 
 With both our original image $x$ and the reconstruction $\hat{x}$ we can create an anomaly map that we can use to detect and locate anomalies in $x$. For this we use similar multi-scale gradient magnitude similarity calculations that we also used for our loss function in section \ref{sec:experimental-setup:loss}.
 
@@ -150,20 +153,27 @@ Instead of a single value we want a complete map thus we adapt the calculation s
 
 \begin{align}
 MSGMS(I, \hat{I}) = \frac{1}{3} \sum_{l=1}^{3} {GMS(I_l, \hat{I}_l)}
+\label{eq:experimental-setup:msgms}
 \end{align}
 
-Since anomalies are usually located in larger connected regions of an image we can aggregate the error of the reconstruction over a larger space by post-processing the MSGMS map using a mean-filter convolution. This smoothing removes the detection when high values are present in the MSGMS map in small regions of the image. These values are more likely to be failed reconstructions or background noise.
-
+Since anomalies are usually located in larger connected regions of an image we can aggregate the error of the reconstruction over a larger space by post-processing the MSGMS map using a mean-filter convolution $mean$. This smoothing prevents a faulty detection when high values are present in small regions of the MSGMS map. These values are more likely to be failed reconstructions or background noise than actual anomalies. This gives us a difference map $diff(I, \hat{I}) \in \mathbb{R}^{H \times W})$.
+%
 \begin{align}
 diff(I, \hat{I}) = 1_{H \times W} - (MSGMS(I, \hat{I}) \ast mean)
+\label{eq:experimental-setup:diff}
 \end{align}
-
-\todo{anomap}
-
-
-
-% The anomaly score map is obtained by first calculating the GMS map considering the input and the reconstructed image over multiple scales. In particular, for each scale l a scaled GMS map is computed by (4) from the input Il and reconstructed image Irl downsampled to the scale l, using the same down-sampling procedure as when computing the MSGMS loss during training. GMS(Il , Irl ) is then upsampled to the original resolution. A multiscale GMS map MSGMS(I, Ir ) is then computed as the per-pixel average of the scaled GMS maps. Anomalies tend to occupy larger spatially connected regions, therefore the reconstruction error can be aggregated over a larger region for a more accurate anomaly detection. The MSGMS map is thus postprocessed by a mean-filter convolution and subtracted from a matrix of ones to generate the anomaly map G(I, Ir ) ∈ [0, 1]H×W
-
+%
+The final anomaly map for the image $I$ is calculated by using the square deviation of the difference map of the image versus the difference map of all the images in the training data $T$.
+%
+\begin{equation}
+\begin{aligned}
+anomap(I) = \biggl( {diff}(I, inp(I)) - \bigr. \\
+\biggl. \frac{1}{|T|} \sum_{t \in T}{{diff}(t, inp(t))} \Bigr) ^ 2 \in \mathbb{R}_{\geq 0}^{H \times W}
+\label{eq:experimental-setup:anomap}
+\end{aligned}
+\end{equation}
+%
+where $inp$ denotes the reconstruction operation done by our transformer model.
 
 \section{Training}
 
@@ -179,8 +189,6 @@ Other parameters define the size and number of patches: patch size $P$, window s
 
 We use a latent dimension of $D = 512$ for our training runs. Both the MSA and MLSA models consist of 13 transformer blocks that have 8 attention heads. This gives us $41,374,976$ trainable parameters. The individual loss weights are set to $\alpha = \beta = 0.01$ and all models are trained with the same Adam optimizer with the learning rate set to $0.001$. The batch size is set to $256$ and all probabilities for dropout are set to $0$.
 
-\todo{Stuff about the kernel size for the msgms map}
-
 To be able to find differences in the training time and to make sure our models fully converge we train our models for a maximum number of $20000$ epochs, which is virtually unlimited since we combine this with early stopping of 150 epochs. The best model is then chosen based on the lowest validation loss.
 
 Each model is trained by submitting a job on a SLURM cluster. The jobs are assigned 4 CPU cores, 1 GPU and maximum 16 GB of memory. The nodes in the cluster are outfitted with 2x Intel Xeon Silver 4214, 8x NVIDIA GeForce RTX 2080 Ti and 128GB of memory.
@@ -189,6 +197,6 @@ Each model is trained by submitting a job on a SLURM cluster. The jobs are assig
 
 To be able to compare two different transformer models we will use the ROC AUC, which is standard for visual anomaly tasks \cite{pirnay_inpainting_2021, zavrtanik_reconstruction_2021, schlegl_unsupervised_2017, li_cutpaste_2021, tsai_autoencoder-based_2021, xie_semisupervised_2021, bergmann_mvtec_2019}.
 
-For this we will use the anomaly map $anomap(x)$ we obtained from the images in section \ref{sec:methods-setup-ad}.
+For this we will use the anomaly map $anomap(I)$ we obtained from the images in section \ref{sec:methods:anomaly-detection}.
 
 We want to evaluate both the anomaly detection on the image-level and the anomaly segmentation on the pixel-level. For the last task we can directly use the anomaly map. For the image-level detection we take the maximum pixel value from the anomaly map as a single anomaly score for the whole image.

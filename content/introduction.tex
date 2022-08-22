@@ -14,14 +14,13 @@ Since the linear transformers seem to have some performance improvement over the
 \textit{What is the effect on the performance and efficiency of using linear transformers in an inpainting context for anomaly detection when compared to regular transformers?}
 
 To be able to compare the different models we ask a few subquestions:
-\todo{Need to rephrase and change questions if necessary based on data}
 \begin{itemize}
-    % inpainting/anomaly detection
-    \item What are easy and hard images for the model?
-    \item Are there correlations between hard and easy cases?
+    % inpainting/anomaly detection/localisation
+    \item Do we see a difference in detection of anomalies across images with different textures and objects?
+    \item Do we see a difference in segmentation of anomalies across images with difference textures and objects?
     % performance/efficiency
-    \item How does the training time compare between types of images?
-    \item How does the training time compare between different types of models?
+    \item How does the number of epochs required to get the best result compare across images with different textures and objects?
+    \item How does the training time compare between the full and linear attention models across images with different textures and objects?
     % linear vs regular
     \item How do our results compare to previous work?
 \end{itemize}

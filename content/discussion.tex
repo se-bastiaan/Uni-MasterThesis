@@ -1,9 +1,106 @@
 \chapter{Discussion}\label{ch:discussion}
 
-\section{Reflect on research question}
+In our results presented in chapter \ref{ch:results} we see that our model can localise and detect anomalies. However, our models do not perform like those from \cite{pirnay_inpainting_2021} and some images have particularly low scores. This chapter reflects on those results. We also discuss some of the choices made for the experimental setup introduced in chapter \ref{ch:experimental-setup}.
 
+\iffalse
+\begin{itemize}
+    \item Speed of linear model
+    \item Dataset masks influencing results
+    \item Equation 7?
+    \item Augmentations
+\end{itemize}
+\fi
 
-\section{Limitations}
+\section{Training data}
 
+\subsection{Ground truth masks}
 
-\section{Future work}
+In section \ref{sec:experimental-setup:data} we introduced the MVTec AD dataset for usage in our experiment.
+
+When looking at the dataset of the metal nut category we see that the mask of the images that have the 'flipped' anomaly are the complete image and not just small parts. The same is also the case for the 'misplaced' anomaly of the transistor, the 'pill type' anomaly for the pill.
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{imgs/samples/metal-nut_flip_anomap.jpg}
+\caption{Example of an anomalous 'flipped' image from the metal nut category comparing MSA, the dataset mask and MLSA}
+\label{fig:discussion:metal-nut-anomap}
+\end{figure}
+
+In figure \ref{fig:discussion:metal-nut-anomap} we see an example of the mask compared to the parts of the images indicated as anomalous by our models. Since our models create an anomaly map that is focused on comparing the original anomalous image with a reconstruction we can only mark parts of the image that are different. The centre of these images is not different when compared to non-anomalous images. This means that our models are unable to mark the complete image as the anomaly. This could explain why the segmentation is relatively low, since the anomaly map is compared to the ground truth that does mark the complete image.
+
+In the case of the transistor category we see a similar result. However, since the category contains multiple situations (rotations, completely missing transistors, non-centred transistors) the effect is less noticeable in the results. In figure \ref{fig:discussion:transistor-anomap} we can see that the anomaly map only matches the parts that are not present in both the original image and the reconstruction, similar to the anomaly map of the metal nut category.
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{imgs/samples/transistor_misplaced_anomap.jpg}
+\caption{Example of an anomalous 'misplaced' image from the transistor category showing the original image, a reconstruction and the anomaly map on top of on the ground truth mask}
+\label{fig:discussion:transistor-anomap}
+\end{figure}
+
+With this knowledge we would argue that our models would never be able to reach perfect segmentation and these categories should thus be considered as hard cases from the dataset. The segmentation of these anomalies would require knowledge about the object in the image.
+
+\subsection{Augmentations}
+
+In \cite{pirnay_inpainting_2021} the authors mentioned using random rotation and flipping to augment the dataset. We have chosen not to implement this for our models. This could in part be the reason why our models perform worse than Pirnay et al.'s. 
+
+However, we have tried to implement both random rotations, vertical and horizontal flipping. This would severely impact the results of the models, in most cases blocking them from learning to reconstruct any image. We think that the right augmentations could improve training the model. This would require finding these parameters. Which was not necessary for us to compare the MSA and MLSA models.
+
+\section{Anomaly map}
+
+The evaluation of our models uses the anomaly map introduced in section \ref{subsec:experimental-setup:anomaly-map}. Examples of the results produced by equation \ref{eq:experimental-setup:anomap} have been shown already in figures \ref{fig:results:leather-anomap}, \ref{fig:results:grid-anomap}, \ref{fig:discussion:metal-nut-anomap} and \ref{fig:discussion:metal-nut-anomap}.
+
+We have seen that some results only show very small parts of our images as anomaly. Since we use equation \ref{eq:experimental-setup:anomap} to remove the average reconstruction error we might be losing information. Therefore we compare our anomaly map directly to the MSGMS-map (equation \ref{eq:experimental-setup:diff}) in figures \ref{fig:discussion:bottle-msgms}, \ref{fig:discussion:metal-nut-msgms} and \ref{fig:discussion:carpet-msgms}.
+
+These images show us that the anomaly map differs from the MSGMS-map. However, the difference is not the same for all the image categories. In the case of the bottle category the anomaly map is missing information. For the carpet category both the MSGMS-map and the anomaly map are similar. Lastly the metal nut shows us a MSGMS-map that is the complete image.
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{imgs/samples/bottle-ano-msgms.jpg}
+\caption{Example of an anomalous image from the bottle category showing the original image, the MSGMS-map and the anomaly map}
+\label{fig:discussion:bottle-msgms}
+\end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{imgs/samples/carpet-ano-msgms.jpg}
+\caption{Example of an anomalous image from the carpet category showing the original image, the MSGMS-map and the anomaly map}
+\label{fig:discussion:carpet-msgms}
+\end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{imgs/samples/metal-nut-ano-msgms.jpg}
+\caption{Example of an anomalous image from the metal nut category showing the original image, the MSGMS-map and the anomaly map}
+\label{fig:discussion:metal-nut-msgms}
+\end{figure}
+
+The anomaly map is created by using the average MSGMS-map over the training data. The difference we see could be the result of a high error rate over de good images. Therefore we look at some images in the test data that have no anomalies.
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{imgs/samples/bottle-good.jpg}
+\caption{Comparison of a good image from the bottle category with the reconstruction and the MSGMS-map}
+\label{fig:discussion:bottle-good}
+\end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{imgs/samples/toothbrush-good.jpg}
+\caption{Comparison of a good image from the toothbrush category with the reconstruction and the MSGMS-map}
+\label{fig:discussion:toothbrush-good}
+\end{figure}
+
+In figure \ref{fig:discussion:bottle-good} and \ref{fig:discussion:toothbrush-good} we see that for the good images we also have version of a MSGMS-map that could indicate an anomaly that is not present. This means that directly using the MSGMS-map could improve the scores for segmentation. However, since we are using the max pixel value for the detection of anomalies in images this would mean that all images would contain an anomaly. That would severely hurt the performance.
+
+We thus need to use the average error during training to post-process our MSGMS-map that is created by comparing the original images to the reconstructions. The reconstructions that our models make are not sufficiently detailed enough for our MSGMS-map to not spot any differences.
+
+An alternative to using the average training error would be to determine a threshold. This would allow us to remove values below the threshold. This does require that extra step and would require a different value for each image. In contrast, the current solution can be a compromise for the large range of image types in the dataset.
+
+\section{Model efficiency}
+
+In section \ref{sec:results:efficiency} we answered our research questions regarding the efficiency of the MSA and MLSA models. We saw that the time taken per epoch is lower for MSA when compared to MLSA. However, the paper by Katharopoulos et al. \cite{katharopoulos_transformers_2020} that introduced MLSA reports a significant difference in the time taken for each epoch in favour of MLSA.
+
+Even thought the MLSA models require less epochs for training on average, we would still expect the MLSA based models to take less time for each epoch.
+
+The first reason for this difference could be an implementation error of the linear attention function. Our transformers are based on a library\footnote{https://github.com/idiap/fast-transformers} by Katharopoulos et al. that contains multiple attention implementations. It allows the user to select a type of transformer, or a part of the transformer structure, and build a model around it.
+

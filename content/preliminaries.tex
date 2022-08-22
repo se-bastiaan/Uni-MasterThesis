@@ -41,9 +41,9 @@ The transformer model uses the same encoder-decoder structure used in the models
 The encoder takes an input representation $(x_1,...x_n)$ and transforms this to an intermediary representation $(z_1,...z_n)$. This intermediary representation is then used as input for the decoder to create an output $(y_1,...,y_n)$.
 
 \begin{figure}[ht]
-\caption{The original transformer architecture from \cite{vaswani_attention_2017}}
 \centering
 \includegraphics[width=0.5\textwidth]{transformer.png}
+\caption{The original transformer architecture from \cite{vaswani_attention_2017}}
 \label{fig:prelim:transformer-architecture}
 \end{figure}
 
@@ -132,9 +132,9 @@ Inpainting is the process of filling in missing, damaged or censored parts in pa
 Applying the technique on digital images can be done using different approaches.
 
 \begin{figure}[ht!]
-\caption{An example of image restoration using inpainting from Bertalmio et al. \cite{bertalmio_image_2000}}
 \centering
 \includegraphics[width=\textwidth]{imgs/inpainting-example.jpeg}
+\caption{An example of image restoration using inpainting from Bertalmio et al. \cite{bertalmio_image_2000}}
 \label{fig:prelim:inpainting-example}
 \end{figure}
 
@@ -149,14 +149,22 @@ Anomaly detection is the detection of outliers, points that have extreme values 
 This kind of detection can be useful in different environments. Examples are intrusion detection in security and fault detection in industrial systems.
 
 \begin{figure}[ht!]
-\caption{An example of outliers in a scatter plot}
 \centering
 \includegraphics[width=\textwidth]{imgs/outliers-example.png}
+\caption{An example of outliers in a scatter plot}
 \label{fig:prelim:outliers-example}
 \end{figure}
 
 In our case we are looking at anomalies in manufacturing. We want to find defects in images of objects and textures.
 
+\section{Image similarity}
 
- 
-\improvement{Add section about image similarity}
+\improvement{Create section about image similarity}
+
+\subsection{Gradient Magnitude Similarity}
+
+
+\subsection{Structured Similarity Index}
+
+% https://medium.com/srm-mic/all-about-structural-similarity-index-ssim-theory-code-in-pytorch-6551b455541e
+
