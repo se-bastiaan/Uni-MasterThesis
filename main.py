@@ -107,7 +107,7 @@ def main(args):
         args.num_workers,
         args.seed,
     )
-    dm.setup("test" if args.test else "fit")
+    dm.prepare_data()
 
     if args.test:
         checkpoint_file = None
