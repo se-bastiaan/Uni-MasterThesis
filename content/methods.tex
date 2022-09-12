@@ -95,7 +95,7 @@ To be able to quantify the performance of our models during training we require 
 
 Since we try to recreate the model from \cite{pirnay_inpainting_2021} we also use a similar loss function. Which is equal to the one used in \cite{zavrtanik_reconstruction_2021}.
 
-Our loss function L consists of three parts. The first part is a pixel-wise $L_2$ loss. This does not take into account perceptual differences, since it assumes that all pixels in the images are independent. Therefore we also use the structured similarity index (SSIM) \cite{bergmann_improving_2019} and the multi-scale gradient magnitude similarity (MSGMS) \cite{xue_gradient_2014, zhang_gradient_2017}.
+Our loss function L consists of three parts. The first part is a pixel-wise $L_2$ loss. This does not take into account perceptual differences, since it assumes that all pixels in the images are independent. Therefore we also use the structured similarity index (SSIM) \cite{wang_image_2004} and the multi-scale gradient magnitude similarity (MSGMS) \cite{xue_gradient_2014, zhang_gradient_2017} that we discussed in section \ref{sec:prelim:image-similarity}.
 
 The SSIM is a metric that looks at dependencies between regions of an images by including luminance, contrast and structural information. This means that it assumes that our model is able to find those structures. MSGMS is similar in that it looks at local image quality but does not focus on those structures.
 \\
@@ -112,8 +112,6 @@ L_{MSGMS}(P, P) = \frac{1}{3} \sum_{l=1}^{3} \frac{1}{N_l} \sum_{x=1}^{W_l}\sum_
 \end{align}
 
 where $N_l$ is the number of scales. $P_l$ and $\hat{P}_l$ the scaled version of the patches and $GMS_{(x,y)}(P_l, \hat{P}_l)$ gives the GMS map of those scaled patches at the pixel location $(x,y)$.
-
-\unsure{Maybe extend the bit explaining the GMS in more detail? Possibly in the preliminaries in image similarity section}
 
 We can then define our complete loss function as 
 
@@ -177,7 +175,7 @@ where $inp$ denotes the reconstruction operation done by our transformer model.
 
 \section{Training}
 
-Using the building blocks given in the previous sections we train 2 models per image in the MVTecAD dataset. This way we can compare the result of the different MSA and MLSA attention functions.
+Using the building blocks given in the previous sections we train 2 models per image in the MVTec AD dataset. This way we can compare the result of the different MSA and MLSA attention functions.
 
 The parameters we used during training are mostly the same as those in \cite{pirnay_inpainting_2021}.
 

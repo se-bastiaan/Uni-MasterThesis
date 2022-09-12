@@ -3,6 +3,7 @@
 This section introduces previous research into the two main problems we are dealing with: image inpainting and anomaly detection.
 
 \section{Image inpainting}
+\label{sec:relwork:image-inpainting}
 
 Inpainting in images is a subject that was already explored by Bertalmio et a. \cite{bertalmio_image_2000} in 2000. They modeled their algorithm after manual inpainting concepts used by conservators. However, their algorithm still needs user input in the form of a mask of the image sections that have to be inpainted. They also encountered problems filling in larger textured regions.
 
@@ -23,21 +24,21 @@ Buiding upon this contextual attention approach both Yu \cite{yu_diverse_2021} a
 \section{Anomaly detection}
 \label{sec:relwork:anomaly-detection}
 
-The subject of anomaly detection is very large, since anomalies can be found in all kinds of datasets. In our case we are focusing on anomaly detection in image representations. Most notably related work using the MVTecAD dataset \cite{bergmann_mvtec_2019}.
+The subject of anomaly detection is very large, since anomalies can be found in all kinds of datasets. In our case we are focusing on anomaly detection in image representations. Most notably related work using the MVTec AD dataset \cite{bergmann_mvtec_2019}.
 
-The MVTecAD dataset contains images that were specifically selected for unsupervised anomaly detection. This allows for easier evaluation of novel approaches and makes it possible to compare models by quantifying the performance. This is illustrated by applying existing methods on the new dataset.
+The MVTec AD dataset contains images that were specifically selected for unsupervised anomaly detection. This allows for easier evaluation of novel approaches and makes it possible to compare models by quantifying the performance. This is illustrated by applying existing methods on the new dataset.
 
-One of these methods by Bergmann \cite{bergmann_improving_2019} uses convolutional autoencoders to segment anomalous sections in images after training a model only on good samples. They use both a per-pixel L2 loss and the structural similarity index (SSIM) to create two models. They show that using SSIM as metric improves their results. For MVTecAD this seems the best performing model but both types of autoencoders fail to reconstruct small details.
+One of these methods by Bergmann \cite{bergmann_improving_2019} uses convolutional autoencoders to segment anomalous sections in images after training a model only on good samples. They use both a per-pixel L2 loss and the structural similarity index (SSIM) to create two models. They show that using SSIM as metric improves their results. For MVTec AD this seems the best performing model but both types of autoencoders fail to reconstruct small details.
 
-A different approach that has more problems getting good results uses GANs. In this case a model by Schlegl et al. \cite{schlegl_unsupervised_2017}. Here the results on MVTecAD have trouble with the images including a lot of variations. The categories that perform better are the bottle and pill images that do not contain any rotations or different shapes.
+A different approach that has more problems getting good results uses GANs. In this case a model by Schlegl et al. \cite{schlegl_unsupervised_2017}. Here the results on MVTec AD have trouble with the images including a lot of variations. The categories that perform better are the bottle and pill images that do not contain any rotations or different shapes.
 
 The last approach that is applicable to all the types of images uses a convolutional neural network for feature discovery. This method by Napoletano et al. \cite{napoletano_anomaly_2018}   was designed for binary classification of images to determine if there is an anomaly or not. To be able to create a course anomaly map the model was applied to smaller patches in the image. This achieves satisfactory results but since the model is applied to the different colour layers separately the anomalies in colour are not detected.
 
-More recently Zavrtanik et al. \cite{zavrtanik_reconstruction_2021} used the MVTecAD dataset for an inpainting approach using a U-net based encoder-decoder network (RIAD). Just like the convolutional autoencoders mentioned previously the loss function uses the SSIM. They combine this with the multi-scale gradient magnitude similarity \cite{xue_gradient_2014} to focus on more image properties.
+More recently Zavrtanik et al. \cite{zavrtanik_reconstruction_2021} used the MVTec AD dataset for an inpainting approach using a U-net based encoder-decoder network (RIAD). Just like the convolutional autoencoders mentioned previously the loss function uses the SSIM. They combine this with the multi-scale gradient magnitude similarity \cite{xue_gradient_2014} to focus on more image properties.
 
 The RIAD approach generally outperforms all the previously mentioned models. And since it uses an inpainting approach it is also the most similar model compared to the inpainting transformer by Pirnay et al. \cite{pirnay_inpainting_2021} that our work is based upon.
 
-\todo{PatchCore van amazon toevoegen}
+The most recent work with the best results for segmentation and detection we could find using the MVTec AD dataset is \cite{yu_fastflow_2021}. Their approach uses a feature extraction approach that they argue is less complex than  \cite{roth_towards_2021} and \cite{gudovskiy_cflow-ad_2021} which all have a 98\% AUROC for detection and segmentation on the dataset. These approaches are what we consider the current state-of-the-art for the dataset.
 
 % Vergeet niet ook nadelen te benadrukken
 % Kijken hoe dingen vergelijken

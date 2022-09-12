@@ -126,7 +126,7 @@ Since we can compute $\sum_{j=1}^{N} \phi(K_j)V_j^T$ and $sum_{j=1}^{N} \phi(K_j
 \section{Image inpainting}
 \label{sec:prelim:image-inpainting}
 
-To be able to detect anomalies without labeling a large dataset we are using a semi-supervised method using image inpainting.
+To be able to detect anomalies without labelling a large dataset we are using a semi-supervised method using image inpainting.
 
 Inpainting is the process of filling in missing, damaged or censored parts in paintings or images. It can also be used for object removal or manipulation.
 Applying the technique on digital images can be done using different approaches.
@@ -148,7 +148,7 @@ Our transformer-based approach, which modeled after the Inpainting Transformer (
 Anomaly detection is the detection of outliers, points that have extreme values compared to the rest, in a dataset.
 This kind of detection can be useful in different environments. Examples are intrusion detection in security and fault detection in industrial systems.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{imgs/outliers-example.png}
 \caption{An example of outliers in a scatter plot}
@@ -158,13 +158,99 @@ This kind of detection can be useful in different environments. Examples are int
 In our case we are looking at anomalies in manufacturing. We want to find defects in images of objects and textures.
 
 \section{Image similarity}
+\label{sec:prelim:image-similarity}
 
-\improvement{Create section about image similarity}
-
-\subsection{Gradient Magnitude Similarity}
-
+To allow us to compare inpainted images to original samples from a dataset we want to use objective measures that try to approach a human visual system. For our research we use two measures specifically: Gradient Magnitude Similarity \cite{xue_gradient_2014, zhang_gradient_2017} and Structured Similarity Index \cite{wang_image_2004}.
 
 \subsection{Structured Similarity Index}
 
+This metric uses three features from an image to be able to make a comparison: luminance, contrast and structure. These features are taken from two images $x$ and $y$.
+
+The luminance is an estimation of the mean intensity:
+
+\begin{align}
+    \mu_x = \frac{1}{N}\sum_{i=1}^{N}{x_i}
+\end{align}
+
+Using $\mu_x$ and $\mu_y$ we can now make a comparison function $l(x, y)$.
+
+\begin{align}
+    l(x, y) = \frac{ 2\mu_x\mu_y + C_1 }{ \mu_x^2 + \mu_y^2 + C_1}
+\end{align}
+
+$C_1$ is a constant that avoids instability when $\mu_x^2 + \mu_y^2$ is almost zero. In \cite{wang_image_2004} they choose $C_1 = ( K_1 L )^2$ with $L$ being the range of the pixel values and $K_1$ as a small constant.
+
+Next we make an estimation of the contrast for both images:
+
+\begin{align}
+    \sigma_x = \left( \frac{1}{N - 1} \sum_{i=1}^{N}{\left( x_i - \mu_x \right)^2} \right)
+\end{align}
+
+Using $\sigma_x$ and $\sigma_y$ we can now make a comparison function $c(x, y)$.
+
+\begin{align}
+    c(x, y) = \frac{ 2\sigma_x\sigma_y + C_2 }{ \sigma_x^2 + \sigma_y^2 + C_2}
+\end{align}
+
+In \cite{wang_image_2004} they choose $C_2 = ( K_2 L )^2$ with $K_2$ as a small constant.
+
+The structure is measured as the standard deviation of the images:
+
+\begin{align}
+    \sigma_{xy} = \frac{ 1 }{ N - 1 } \sum^N_{i=1}{(x_i - \mu_x)(y_i - \mu_y)} 
+\end{align}
+
+\begin{align}
+    s(x, y) = \frac{ \sigma_{xy} + C_3 }{ \sigma_x + \sigma_y + C_3}
+\end{align}
+
+When we combine these comparisons of the images the eventual SSIM comparison:
+
+\begin{align}
+    SSIM(x, y) = [l(x,y)]^\alpha \cdot [c(x,y)]^\beta \cdot [s(x,y)]^\gamma
+\end{align}
+
+where $\alpha > 0$, $\beta > 0$ and $\gamma > 0$ are parameters that can be adjusted to create a different relative importance of the three features.
+
 % https://medium.com/srm-mic/all-about-structural-similarity-index-ssim-theory-code-in-pytorch-6551b455541e
 
+\subsection{Gradient Magnitude Similarity}
+
+The gradient magnitude similarity (GMS) score uses gradient magnitude maps of a ground truth image and a reconstruction. These local quality maps (LQM) are used to calculate a final score by pooling the map using the standard deviation.
+
+The local quality map is computed using the pixel-wise similarity of gradient magnitude maps. These gradient magnitude maps of the original image $r$ and reconstructed image $d$ are obtained by convolving both images with Prewitt filters in the horizontal ($x$) and vertical ($y$) direction. These are defined as follows:
+
+\begin{align}
+    h_x =
+  \left[ {\begin{array}{ccc}
+    1/3 & 0 & -1/3\\
+    1/3 & 0 & -1/3\\
+    1/3 & 0 & -1/3\\
+  \end{array} } \right]
+  & \, &
+    h_y =
+  \left[ {\begin{array}{ccc}
+    1/3 & 1/3 & 1/3\\
+    0 & 0 & 0\\
+    -1/3 & -1/3 & -1/3\\
+  \end{array} } \right]
+\end{align}
+
+The magnitudes at location $i$ for $r$ and $d$ is denoted as $m_r(i)$ and $m_d(i)$:
+
+\begin{align}
+    m_r(i) = \sqrt{ (r \ast h_x)^2 (i) + (r \ast h_y)^2 (i) }
+\end{align}
+
+\begin{align}
+    m_d(i) = \sqrt{ (d \ast h_x)^2 (i) + (d \ast h_y)^2 (i) }
+\end{align}
+
+With these gradient magnitude maps we can now compute the GMS:
+
+\begin{align}
+    GMS(i) = \frac{2m_r (i) m_d (i) + C}{m^2_r(i) m^2_d(i) + C}
+    \label{eq:prelim:gms}
+\end{align}
+
+where C is a positive constant for stability, like the values used for the SSIM.

@@ -18,7 +18,8 @@
 \usepackage{hyperref}
 \usepackage{tikz}
 \usepackage[sort,nocompress]{cite}
-\usepackage{booktabs}
+\usepackage[nottoc,notlot,notlof]{tocbibind}
+% \usepackage{booktabs}
 
 \usepackage{xargs}
 
@@ -82,7 +83,7 @@ Firstname Lastname\\
 \end{titlepage}
 
 \input{content/abstract}
-\input{content/acknowledgements}
+% \input{content/acknowledgements}
 \tableofcontents
 
 \input{content/introduction}
@@ -96,8 +97,8 @@ Firstname Lastname\\
 \bibliographystyle{acm}
 \bibliography{references}
 
-\appendix
-\input{content/appendix}
+% \appendix
+% \input{content/appendix}
 
 \newpage
 \listoftodos[Notes]

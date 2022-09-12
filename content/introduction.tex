@@ -1,15 +1,12 @@
 \chapter{Introduction}\label{ch:introduction}
 
-The detection of deviations in data is an important topic in multiple fields. Examples of these include medical imaging \cite{han_madgan_2021}, surveillance \cite{shashikar_traffic_2017} and manufacturing \cite{susto_anomaly_2017}. These types of anomaly detection aim to find irregularities in different types of images.
-
-\improvement{Elaborate more on why anomaly detection is useful exactly}
+The detection of deviations in data is an important topic in multiple fields. Examples of these include medical imaging \cite{han_madgan_2021}, surveillance \cite{shashikar_traffic_2017} and manufacturing \cite{susto_anomaly_2017}. These types of anomaly detection aim to find irregularities in different types of images. Using this type of processing we can improve outputs and diagnoses of systems either by automating the process or giving support.
 
 Notably self-supervised anomaly detection is an approach that has been explored recently \cite{li_cutpaste_2021, ali_self-supervised_2020}. This type of machine learning means that we use unlabeled data to train our models. We can use examples of normal situations to be able to reconstruct full images where the anomaly has been removed. This allows us to compare a source image to a reconstruction and find any anomalies. This method using image inpainting has been implemented using various methods like generative adversarial networks (GANs) \cite{yeh_semantic_2017} and transformers \cite{pirnay_inpainting_2021}.
 
-
 Transformers \cite{vaswani_attention_2017} are a type of model that is based on self-attention. This attention processes a lot of context, which makes the training of these types of models slow. Therefore different implementations have been explored, like linear transformers \cite{katharopoulos_transformers_2020}, fastformers \cite{wu_fastformer_2021} and linformers \cite{wang_linformer_2020}.
 
-Since the linear transformers seem to have some performance improvement over the vanilla transformers we see an opportunity to use these newer type of transformer in the context of image inpainting for anomaly detection. We propose to use the method used by Pirnay et al. \cite{pirnay_inpainting_2021} but replace the used transformer by the linear transformer introduced by Katharopoulos et al. \cite{katharopoulos_transformers_2020}. Thus we ask:
+Since the linear transformers seem to have some performance improvement over the vanilla transformers we see an opportunity to use these newer type of transformer in the context of image inpainting for anomaly detection. We propose to use a similar method to the one used by Pirnay et al. \cite{pirnay_inpainting_2021} but replace the used transformer by the linear transformer introduced by Katharopoulos et al. \cite{katharopoulos_transformers_2020}. Thus we ask:
 
 \textit{What is the effect on the performance and efficiency of using linear transformers in an inpainting context for anomaly detection when compared to regular transformers?}
 
@@ -27,4 +24,4 @@ To be able to compare the different models we ask a few subquestions:
 
 We will answer this by doing an in-depth analysis of using linear transformers compared to regular transformers.
 
-\improvement{Insert section about thesis structure in general}
+This thesis is structured as follows: first we will discuss machine learning in general (\ref{sec:prelim:types-of-machine-learning}). We will look at transformers and the different types that we need to answer our research questions (\ref{sec:prelim:transformers}). Next we will introduce the concepts of image inpainting and anomaly detection (\ref{sec:prelim:image-inpainting}, \ref{sec:prelim:anomaly-detection}) followed by measures for image similarity (\ref{sec:prelim:image-similarity}). Consecutively we will discuss related work in the fields of image inpainting and anomaly detection (\ref{sec:relwork:image-inpainting}, \ref{sec:relwork:anomaly-detection}) before explaining how we setup our experiment (\ref{ch:experimental-setup}). Then we will show the results from the experimental setup looking at detection, segmentation (\ref{sec:results:det-seg}) and efficiency (\ref{sec:results:efficiency}). A discussion of the experimental setup and the results follows (\ref{ch:discussion}) and lastly we will draw our conclusions (\ref{ch:conclusions}).
