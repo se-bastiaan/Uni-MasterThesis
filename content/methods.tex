@@ -66,12 +66,11 @@ where $E \in \mathbb{R}^{(K^2 \;\cdot\; C) \times D}$ and $posemb$ is a standard
 The final input sequence for the model is then formed by $z$ and $y^{(i, j)}$ for each $(i, j) \;\in\; S \setminus {(t,u)}$.
 
 \begin{figure}[ht!]
-\caption{An overview of the inpainting transformer steps by Pirnay et al. \cite{pirnay_inpainting_2021}}
 \centering
 \includegraphics[width=\textwidth]{imgs/intra-overview.png}
 \label{fig:experimental-setup:intra-overview}
 \end{figure}
-
+\caption{An overview of the inpainting transformer steps by Pirnay et al. \cite{pirnay_inpainting_2021}}
 \subsection{Architecture}
 
 The architecture for our inpainting model uses $n$ blocks of the transformer encoder that are stacked.
