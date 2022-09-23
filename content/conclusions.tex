@@ -1,6 +1,6 @@
 \chapter{Conclusions}\label{ch:conclusions}
 
-In this thesis we have shown that we can use transformers with a linear attention function to tackle an anomaly detection problem using inpainting. Our primary goal was to answer the main research question we asked in the introduction: \textit{What is the effect on the performance and efficiency of using linear transformers in an inpainting context for anomaly detection when compared to regular transformers?}
+In this thesis we have shown that we can use visual transformers with a linear attention function to tackle an anomaly detection problem using inpainting. Our primary goal was to answer the main research question we asked in the introduction: \textsl{What is the effect on the performance and efficiency of using linear transformers in an inpainting context for anomaly detection when compared to regular transformers?}
 
 To answer this question we have successfully implemented two types of models for inpainting: one using regular transformers and one using linear transformers. To evaluate our models they have been trained on the MVTec AD dataset and the results of the inpainting task were used to perform anomaly detection. This required us to calculate anomaly maps using the MSGMS metric that we were able to compare with the masks provided by the dataset.
 
@@ -10,7 +10,7 @@ This should answer our primary research question. However, we think that our res
 
 For future work our models could be revisited to find the resource usage of the different parts like the data loader and metrics functions. An in-depth analysis of the resource usage of these parts could give a better insight to understand our results.
 
-Another change could be adding augmentations to the data loader to see if this would improve the results. As well as hyperparameter optimisation. It might be possible that the different transformers can reach better results with other parameters than those that we re-used from other papers. As well as changing the evaluation and the loss function to find better options that would be better suited for the reconstruction task.
+Another change could be adding augmentations to the data loader to see if this would improve the results. As well as hyperparameter optimisation. It might be possible that the different visual transformers can reach better results with other parameters than those that we re-used from other papers. As well as changing the evaluation and the loss function to find better options that would be better suited for the reconstruction task.
 
 Different approaches using linear transformers could also be explored. For example by using linear transformers for feature extraction in a similar approach like the one introduced in \cite{yu_fastflow_2021}.
 

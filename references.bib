@@ -1,4 +1,78 @@
 
+@misc{choromanski_rethinking_2020,
+	title = {Rethinking {Attention} with {Performers}},
+	url = {http://arxiv.org/abs/2009.14794},
+	doi = {10.48550/arXiv.2009.14794},
+	abstract = {We introduce Performers, Transformer architectures which can estimate regular (softmax) full-rank-attention Transformers with provable accuracy, but using only linear (as opposed to quadratic) space and time complexity, without relying on any priors such as sparsity or low-rankness. To approximate softmax attention-kernels, Performers use a novel Fast Attention Via positive Orthogonal Random features approach (FAVOR+), which may be of independent interest for scalable kernel methods. FAVOR+ can be also used to efficiently model kernelizable attention mechanisms beyond softmax. This representational power is crucial to accurately compare softmax with other kernels for the first time on large-scale tasks, beyond the reach of regular Transformers, and investigate optimal attention-kernels. Performers are linear architectures fully compatible with regular Transformers and with strong theoretical guarantees: unbiased or nearly-unbiased estimation of the attention matrix, uniform convergence and low estimation variance. We tested Performers on a rich set of tasks stretching from pixel-prediction through text models to protein sequence modeling. We demonstrate competitive results with other examined efficient sparse and dense attention methods, showcasing effectiveness of the novel attention-learning paradigm leveraged by Performers.},
+	urldate = {2022-09-22},
+	publisher = {arXiv},
+	author = {Choromanski, Krzysztof and Likhosherstov, Valerii and Dohan, David and Song, Xingyou and Gane, Andreea and Sarlos, Tamas and Hawkins, Peter and Davis, Jared and Mohiuddin, Afroz and Kaiser, Lukasz and Belanger, David and Colwell, Lucy and Weller, Adrian},
+	month = sep,
+	year = {2020},
+	note = {arXiv:2009.14794 [cs, stat]
+version: 1},
+	keywords = {Computer Science - Computation and Language, Computer Science - Machine Learning, Statistics - Machine Learning},
+}
+
+@misc{tsai_transformer_2019,
+	title = {Transformer {Dissection}: {A} {Unified} {Understanding} of {Transformer}'s {Attention} via the {Lens} of {Kernel}},
+	shorttitle = {Transformer {Dissection}},
+	url = {http://arxiv.org/abs/1908.11775},
+	doi = {10.48550/arXiv.1908.11775},
+	abstract = {Transformer is a powerful architecture that achieves superior performance on various sequence learning tasks, including neural machine translation, language understanding, and sequence prediction. At the core of the Transformer is the attention mechanism, which concurrently processes all inputs in the streams. In this paper, we present a new formulation of attention via the lens of the kernel. To be more precise, we realize that the attention can be seen as applying kernel smoother over the inputs with the kernel scores being the similarities between inputs. This new formulation gives us a better way to understand individual components of the Transformer's attention, such as the better way to integrate the positional embedding. Another important advantage of our kernel-based formulation is that it paves the way to a larger space of composing Transformer's attention. As an example, we propose a new variant of Transformer's attention which models the input as a product of symmetric kernels. This approach achieves competitive performance to the current state of the art model with less computation. In our experiments, we empirically study different kernel construction strategies on two widely used tasks: neural machine translation and sequence prediction.},
+	urldate = {2022-09-22},
+	publisher = {arXiv},
+	author = {Tsai, Yao-Hung Hubert and Bai, Shaojie and Yamada, Makoto and Morency, Louis-Philippe and Salakhutdinov, Ruslan},
+	month = aug,
+	year = {2019},
+	note = {arXiv:1908.11775 [cs, stat]
+version: 1},
+	keywords = {Computer Science - Machine Learning, Statistics - Machine Learning},
+}
+
+@misc{peng_random_2021,
+	title = {Random {Feature} {Attention}},
+	url = {http://arxiv.org/abs/2103.02143},
+	doi = {10.48550/arXiv.2103.02143},
+	abstract = {Transformers are state-of-the-art models for a variety of sequence modeling tasks. At their core is an attention function which models pairwise interactions between the inputs at every timestep. While attention is powerful, it does not scale efficiently to long sequences due to its quadratic time and space complexity in the sequence length. We propose RFA, a linear time and space attention that uses random feature methods to approximate the softmax function, and explore its application in transformers. RFA can be used as a drop-in replacement for conventional softmax attention and offers a straightforward way of learning with recency bias through an optional gating mechanism. Experiments on language modeling and machine translation demonstrate that RFA achieves similar or better performance compared to strong transformer baselines. In the machine translation experiment, RFA decodes twice as fast as a vanilla transformer. Compared to existing efficient transformer variants, RFA is competitive in terms of both accuracy and efficiency on three long text classification datasets. Our analysis shows that RFA's efficiency gains are especially notable on long sequences, suggesting that RFA will be particularly useful in tasks that require working with large inputs, fast decoding speed, or low memory footprints.},
+	urldate = {2022-09-22},
+	publisher = {arXiv},
+	author = {Peng, Hao and Pappas, Nikolaos and Yogatama, Dani and Schwartz, Roy and Smith, Noah A. and Kong, Lingpeng},
+	month = mar,
+	year = {2021},
+	note = {arXiv:2103.02143 [cs]},
+	keywords = {Computer Science - Computation and Language},
+}
+
+@misc{clevert_fast_2015,
+	title = {Fast and {Accurate} {Deep} {Network} {Learning} by {Exponential} {Linear} {Units} ({ELUs})},
+	url = {http://arxiv.org/abs/1511.07289},
+	doi = {10.48550/arXiv.1511.07289},
+	abstract = {We introduce the "exponential linear unit" (ELU) which speeds up learning in deep neural networks and leads to higher classification accuracies. Like rectified linear units (ReLUs), leaky ReLUs (LReLUs) and parametrized ReLUs (PReLUs), ELUs alleviate the vanishing gradient problem via the identity for positive values. However, ELUs have improved learning characteristics compared to the units with other activation functions. In contrast to ReLUs, ELUs have negative values which allows them to push mean unit activations closer to zero like batch normalization but with lower computational complexity. Mean shifts toward zero speed up learning by bringing the normal gradient closer to the unit natural gradient because of a reduced bias shift effect. While LReLUs and PReLUs have negative values, too, they do not ensure a noise-robust deactivation state. ELUs saturate to a negative value with smaller inputs and thereby decrease the forward propagated variation and information. Therefore, ELUs code the degree of presence of particular phenomena in the input, while they do not quantitatively model the degree of their absence. In experiments, ELUs lead not only to faster learning, but also to significantly better generalization performance than ReLUs and LReLUs on networks with more than 5 layers. On CIFAR-100 ELUs networks significantly outperform ReLU networks with batch normalization while batch normalization does not improve ELU networks. ELU networks are among the top 10 reported CIFAR-10 results and yield the best published result on CIFAR-100, without resorting to multi-view evaluation or model averaging. On ImageNet, ELU networks considerably speed up learning compared to a ReLU network with the same architecture, obtaining less than 10\% classification error for a single crop, single model network.},
+	urldate = {2022-09-19},
+	publisher = {arXiv},
+	author = {Clevert, Djork-Arné and Unterthiner, Thomas and Hochreiter, Sepp},
+	month = nov,
+	year = {2015},
+	note = {arXiv:1511.07289 [cs]
+version: 1},
+	keywords = {Computer Science - Machine Learning},
+}
+
+@misc{clevert_fast_2016,
+	title = {Fast and {Accurate} {Deep} {Network} {Learning} by {Exponential} {Linear} {Units} ({ELUs})},
+	url = {http://arxiv.org/abs/1511.07289},
+	doi = {10.48550/arXiv.1511.07289},
+	abstract = {We introduce the "exponential linear unit" (ELU) which speeds up learning in deep neural networks and leads to higher classification accuracies. Like rectified linear units (ReLUs), leaky ReLUs (LReLUs) and parametrized ReLUs (PReLUs), ELUs alleviate the vanishing gradient problem via the identity for positive values. However, ELUs have improved learning characteristics compared to the units with other activation functions. In contrast to ReLUs, ELUs have negative values which allows them to push mean unit activations closer to zero like batch normalization but with lower computational complexity. Mean shifts toward zero speed up learning by bringing the normal gradient closer to the unit natural gradient because of a reduced bias shift effect. While LReLUs and PReLUs have negative values, too, they do not ensure a noise-robust deactivation state. ELUs saturate to a negative value with smaller inputs and thereby decrease the forward propagated variation and information. Therefore, ELUs code the degree of presence of particular phenomena in the input, while they do not quantitatively model the degree of their absence. In experiments, ELUs lead not only to faster learning, but also to significantly better generalization performance than ReLUs and LReLUs on networks with more than 5 layers. On CIFAR-100 ELUs networks significantly outperform ReLU networks with batch normalization while batch normalization does not improve ELU networks. ELU networks are among the top 10 reported CIFAR-10 results and yield the best published result on CIFAR-100, without resorting to multi-view evaluation or model averaging. On ImageNet, ELU networks considerably speed up learning compared to a ReLU network with the same architecture, obtaining less than 10\% classification error for a single crop, single model network.},
+	urldate = {2022-09-19},
+	publisher = {arXiv},
+	author = {Clevert, Djork-Arné and Unterthiner, Thomas and Hochreiter, Sepp},
+	month = feb,
+	year = {2016},
+	note = {arXiv:1511.07289 [cs]},
+	keywords = {Computer Science - Machine Learning},
+}
+
 @misc{gudovskiy_cflow-ad_2021,
 	title = {{CFLOW}-{AD}: {Real}-{Time} {Unsupervised} {Anomaly} {Detection} with {Localization} via {Conditional} {Normalizing} {Flows}},
 	shorttitle = {{CFLOW}-{AD}},
@@ -27,15 +101,6 @@
 	note = {arXiv:2106.08265 [cs]
 version: 1},
 	keywords = {Computer Science - Computer Vision and Pattern Recognition},
-}
-
-@misc{noauthor_papers_nodate,
-	title = {Papers with {Code} - {CFLOW}-{AD}: {Real}-{Time} {Unsupervised} {Anomaly} {Detection} with {Localization} via {Conditional} {Normalizing} {Flows}},
-	shorttitle = {Papers with {Code} - {CFLOW}-{AD}},
-	url = {https://paperswithcode.com/paper/cflow-ad-real-time-unsupervised-anomaly},
-	abstract = {\#8 best model for Anomaly Detection on MVTec AD (Detection AUROC metric)},
-	language = {en},
-	urldate = {2022-08-23},
 }
 
 @misc{yu_fastflow_2021,
@@ -454,7 +519,7 @@ version: 2},
 	keywords = {Computer Science - Computer Vision and Pattern Recognition, Computer Science - Graphics},
 }
 
-@misc{noauthor_papers_nodate-1,
+@misc{noauthor_papers_nodate,
 	title = {Papers with {Code} - {Generative} {Image} {Inpainting} with {Contextual} {Attention}},
 	url = {https://paperswithcode.com/paper/generative-image-inpainting-with-contextual},
 	abstract = {Implemented in 28 code libraries.},

@@ -17,8 +17,6 @@ In our results presented in chapter \ref{ch:results} we see that our model can l
 
 In section \ref{sec:experimental-setup:data} we introduced the MVTec AD dataset for usage in our experiment.
 
-When looking at the dataset of the metal nut category we see that the mask of the images that have the 'flipped' anomaly are the complete image and not just small parts. The same is also the case for the 'misplaced' anomaly of the transistor, the 'pill type' anomaly for the pill.
-
 \begin{figure}[ht!]
 \centering
 \includegraphics[width=\textwidth]{imgs/samples/metal-nut_flip_anomap.jpg}
@@ -37,13 +35,11 @@ In the case of the transistor category we see a similar result. However, since t
 \label{fig:discussion:transistor-anomap}
 \end{figure}
 
-With this knowledge we would argue that our models would never be able to reach perfect segmentation and these categories should thus be considered as hard cases from the dataset. The segmentation of these anomalies would require knowledge about the object in the image.
+With this knowledge we would argue that our models would never be able to reach perfect segmentation and these categories should thus be considered as hard cases. The segmentation of these anomalies would require knowledge about the object in the image.
 
-\subsection{Augmentations}
+\subsection{Data augmentations}
 
-In \cite{pirnay_inpainting_2021} the authors mentioned using random rotation and flipping to augment the dataset. We have chosen not to implement this for our models. This could in part be the reason why our models perform worse than Pirnay et al.'s. 
-
-However, we have tried to implement both random rotations, vertical and horizontal flipping. This would severely impact the results of the models, in most cases blocking them from learning to reconstruct any image. We think that the right augmentations could improve training the model. This would require finding these parameters. Which was not necessary for us to compare the MSA and MLSA models.
+In \cite{pirnay_inpainting_2021} the authors mentioned using random rotation and flipping to augment the dataset during training. We have tried to implement both random rotations, vertical and horizontal flipping for our models. However, this would severely impact the results of the models, in most cases blocking them from learning to reconstruct any image. Based on the results from Pirnay et al. we think that the right augmentations could improve training the model. This would require tuning these parameters to find the correct degree of rotations.
 
 \section{Anomaly map}
 
@@ -74,7 +70,7 @@ These images show us that the anomaly map differs from the MSGMS-map. However, t
 \label{fig:discussion:metal-nut-msgms}
 \end{figure}
 
-The anomaly map is created by using the average MSGMS-map over the training data. The difference we see could be the result of a high error rate over de good images. Therefore we look at some images in the test data that have no anomalies.
+The anomaly map is created by using the average MSGMS-map over the training data. The difference we see could be the result of a high error rate over the good images. Therefore we look at some images in the test data that have no anomalies.
 
 \begin{figure}[ht!]
 \centering
@@ -100,9 +96,9 @@ An alternative to using the average training error would be to determine a thres
 
 In section \ref{sec:results:efficiency} we answered our research questions regarding the efficiency of the MSA and MLSA models. We saw that the time taken per epoch is lower for MSA when compared to MLSA. However, the paper by Katharopoulos et al. \cite{katharopoulos_transformers_2020} that introduced MLSA reports a significant difference in the time taken for each epoch in favour of MLSA.
 
-Even thought the MLSA models require less epochs for training on average, we would still expect the MLSA based models to take less time for each epoch.
+Even though the MLSA models require less epochs for training on average, we would still expect the MLSA based models to take less time for each epoch.
 
-The first reason for this difference could be an implementation error of the linear attention function. Our transformers are based on a library\footnote{https://github.com/idiap/fast-transformers} by Katharopoulos et al. that contains multiple attention implementations. It allows the user to select a type of transformer, or a part of the transformer structure, and build a model around it. Since we use this library we think it is unlikely that the implementation of the attention function causes the time difference of our model. Moreover, the time difference between running the two attention types is verifiable by running the basic example from the reposity. We have done this on the cluster machines, giving us 87.59ms versus 54.43ms for the normal and linear attention functions respectively.
+The first reason for this difference could be an implementation error of the linear attention function. Our transformers are based on a library\footnote{https://github.com/idiap/fast-transformers} by Katharopoulos et al. that contains multiple attention implementations. It allows the user to select a type of transformer, or a part of the transformer structure, and build a model around it. Since we use this library we think it is unlikely that the implementation of the attention function causes the time difference of our model. Moreover, the time difference between running the two attention types is verifiable by running the basic example from the repository. We have done this on the cluster machines, giving us 87.59ms versus 54.43ms for the normal and linear attention functions respectively.
 
 A second cause for the differences could be the code surrounding the attention function. Primarily loading the images from disk and splitting them into patches can be resource intensive. Similarly the loss function can take a longer time to calculate. To be able to figure out the resource usage of each part in our model we would need to run our models with a profiler. This is something that could be a good starting point for future work since a job with a profiler uses a lot more resources, based on the (failed) test runs that we have done.
 

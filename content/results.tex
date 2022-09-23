@@ -1,9 +1,9 @@
 \chapter{Results}\label{ch:results}
 
-In this chapter we will try to answer our subquestions using the data we obtained\footnote{https://tensorboard.dev/experiment/1YZvra2iQseNTMWDeBFREw/} after training our models.
+In this chapter we will try to answer our subquestions using the results we obtained\footnote{https://tensorboard.dev/experiment/1YZvra2iQseNTMWDeBFREw/} after training and testing our models.
 
 \iffalse
-\textit{What is the effect on the performance and efficiency of using linear transformers in an inpainting context for anomaly detection when compared to regular transformers?}
+\textsl{What is the effect on the performance and efficiency of using linear transformers in an inpainting context for anomaly detection when compared to regular transformers?}
 
 To be able to compare the different models we ask a few subquestions:
 \begin{itemize}
@@ -21,9 +21,9 @@ To be able to compare the different models we ask a few subquestions:
 \section{Detection \& Segmentation}
 \label{sec:results:det-seg}
 
-\textit{Do we see a difference in detection of anomalies across images with different textures and objects?}
+\textsl{What is the difference between softmax and linear attention in detection of anomalies across images with different textures and objects?}
 
-The ROC AUC \% scores of our MSA and MLSA models are given by table \ref{table:results:segdet}. The best models for each image have been indicated by bold text.
+The AUROC \% scores of our MSA and MLSA models are given by table \ref{table:results:segdet}. The best models for each image have been indicated by bold text.
 
 This shows that for detection the MLSA-based models outperform the MSA-based models the majority of the textured images. The wood and leather categories are the exceptions. The difference between the MSA and MLSA models is particularly high in the carpet, grid and leather categories.
 
@@ -31,13 +31,13 @@ The results for detection on the object images are split equally over MSA and ML
 
 \
 
-\textit{Do we see a difference in segmentation of anomalies across images with difference textures and objects?}
+\textsl{What is the difference between softmax and linear attention in segmentation of anomalies across images with difference textures and objects?}
 
 The results for segmentation across the textured images is very similar when compared to the numbers for detection. MSA seems to perform worse for three out of the five textured images. The same is true for the object images. The differences for the capsule, hazelnut and metal nut between MSA and MLSA are especially high. MLSA has a higher score for all these cases with at least a difference of 7\%. Interestingly MSA seems to perform better on average when the image size is larger.
 
 \
 
-Looking at the figure \ref{fig:results:leather-anomap} we see that the mask and the segmentations of the anomaly for the leather category do not match, only the center of the anomaly is correctly localised. This explains the low ROC AUC value. Looking at the reconstructions in figure \ref{fig:results:leather-recon} we see that both the models using MSA and MLSA are missing details, which means that the average training error used to calculate the anomaly map affects the results. For the better performing grid category we see in figure \ref{fig:results:grid-anomap} that the anomalies are correctly localised, with the MSA model having more noise in the anomaly map around the sides.
+Let us analyse results for some specific cases with low and high model performance. Looking at the figure \ref{fig:results:leather-anomap} we see that the mask and the segmentations of the anomaly for the leather category do not match, only the center of the anomaly is correctly localised. This explains the low AUROC value. Looking at the reconstructions in figure \ref{fig:results:leather-recon} we see that both the models using MSA and MLSA are missing details, which means that the average training error used to calculate the anomaly map affects the results. For the better performing grid category we see in figure \ref{fig:results:grid-anomap} that the anomalies are correctly localised, with the MSA model having more noise in the anomaly map around the sides.
 
 \begin{figure}[ht!]
 \centering
@@ -60,13 +60,13 @@ Looking at the figure \ref{fig:results:leather-anomap} we see that the mask and 
 \label{fig:results:grid-anomap}
 \end{figure}
 
-It is interesting to see that the models do not perform the best for the majority of the images for detection and segmentation, but only for one of these tasks. Since the score for detection depends on the anomaly map that is used to calculate the score for segmentation we would expect the segmentation score to directly relate to the detection score.
+It is interesting to see that the models do not perform the best for the majority of the images for both detection and segmentation, but only for one of these tasks. Since the score for detection depends on the anomaly map that is used to calculate the score for segmentation we would expect the segmentation score to directly relate to the detection score. However, the detection score is only a maximum pixel value which means it only represents one pixel of the anomaly map not taking into account the other values of the anomaly map. The segmentation score does look at all pixels.
 
 
 
 \
 
-Overall our numbers show that MLSA gives us better results, both for segmentation and detection on textured and object images. And for detection on texture images.
+Overall our results show that MLSA has better performance than MSA, both for segmentation and detection on textured and object images. And for detection on texture images.
 
 \iffalse
 \begin{itemize}
@@ -116,7 +116,7 @@ All average     & 80.02        & 66.46     & \textbf{81.32}        & \textbf{70.
 \end{tabular}
 }
 \label{table:results:segdet}
-\caption{Results in ROC AUC \% for segmentation and detection}
+\caption{Results in AUROC \% for segmentation and detection}
 \end{table}
 
 
@@ -125,7 +125,7 @@ All average     & 80.02        & 66.46     & \textbf{81.32}        & \textbf{70.
 \section{Efficiency}
 \label{sec:results:efficiency}
 
-\textit{How does the number of epochs required to get the best result compare across images with different textures and objects?}\
+\textsl{How does the number of epochs required to get the best result compare across images with different textures and objects?}\
 
 The number of epochs required depends on the type of image. Image that have more complex structures require more epochs. We see this especially in the texture category and for the cable, screw and transistor images. Another factor affecting the number of epochs is the amount of colours used. This is shown by the pill and zipper images that both require a very low number of epochs and primarily consist of black, white and grey colours. We give some samples of the image categories in figure \ref{fig:results:detail-samples}.
 
@@ -136,9 +136,9 @@ The number of epochs required depends on the type of image. Image that have more
 \label{fig:results:detail-samples}
 \end{figure}
 
-\textit{How does the training time compare between the full and linear attention models across images with different textures and objects?}\
+\textsl{How does the training time compare between the softmax and linear attention models across images with different textures and objects?}\
 
-We see that the time per epoch is lower for MSA in all categories except for the pill and transistor images. With this information we would expect the MSA models to also finish training faster. The opposite is true however, since the number of epochs required for the best result is lower in eleven of the fifteen cases the total training time is lower for MLSA.
+We see that the time per epoch is lower for MSA in all categories except for the pill and transistor images. With this information we would expect the MSA models to also finish training faster. The opposite is true however. The number of epochs required for the best result is lower in eleven of the fifteen cases, which also means that the total training time is lower for MLSA.
 
 \iffalse
 \begin{itemize}
@@ -160,22 +160,22 @@ Category   & \multicolumn{3}{l}{MSA}                 & \multicolumn{3}{l}{MLSA} 
 \midrule
 ~          & Best epoch & Time/Epoch & Training time & Best epoch & Time/Epoch & Training time  \\ 
 \midrule
-Carpet     & 77         & 0:58:05    & 220:42:00     & 138        & 1:07:17    & 265:47:00      \\
-Grid       & 140        & 0:26:48    & 130:00:00     & 53         & 0:33:34    & 114:06:00      \\
-Leather    & 142        & 0:43:50    & 214:03:00     & 142        & 0:43:33    & 213:24:00      \\
-Tile       & 353        & 0:36:40    & 308:01:00     & 555        & 0:39:38    & 466:23:00      \\
-Wood       & 149        & 0:53:56    & 270:33:00     & 124        & 0:56:16    & 258:49:00      \\
+Carpet     & \textbf{77}         & \textbf{0:58:05}    & \textbf{220:42:00}     & 138        & 1:07:17    & 265:47:00      \\
+Grid       & 140        & \textbf{0:26:48}    & 130:00:00     & \textbf{53}         & 0:33:34    & \textbf{114:06:00}      \\
+Leather    & 142        & 0:43:50    & 214:03:00     & 142        & \textbf{0:43:33}    & \textbf{213:24:00}      \\
+Tile       & \textbf{353}        & 0:36:40    & \textbf{308:01:00}     & 555        & \textbf{0:39:38}    & 466:23:00      \\
+Wood       & 149        & 0:53:56    & 270:33:00     & \textbf{124}        & \textbf{0:56:16}    & \textbf{258:49:00}      \\
 \midrule
-Bottle     & 37         & 0:24:11    & 75:47:00      & 11         & 0:24:33    & 66:16:00       \\
-Cable      & 250        & 0:39:59    & 267:55:00     & 211        & 0:48:07    & 267:05:00      \\
-Capsule    & 27         & 0:41:38    & 123:30:00     & 14         & 0:41:45    & 114:50:00      \\
-Hazelnut   & 83         & 1:22:12    & 321:56:00     & 19         & 1:25:10    & 242:43:00      \\
-Metal nut  & 148        & 0:25:31    & 127:10:00     & 43         & 0:28:22    & 91:42:00       \\
-Pill       & 5          & 0:48:57    & 128:06:00     & 4          & 0:46:54    & 121:57:00      \\
-Screw      & 245        & 0:40:27    & 267:01:00     & 211        & 0:40:37    & 245:04:00      \\
-Toothbrush & 58         & 0:12:19    & 42:55:00      & 58         & 0:12:10    & 42:24:00       \\
-Transistor & 271        & 0:46:40    & 328:13:00     & 196        & 0:44:59    & 260:57:00      \\
-Zipper     & 5          & 0:25:59    & 67:34:00      & 5          & 0:34:52    & 90:39:00       \\
+Bottle     & 37         & \textbf{0:24:11}    & 75:47:00      & \textbf{11}         & 0:24:33    & \textbf{66:16:00}       \\
+Cable      & 250        & \textbf{0:39:59}    & 267:55:00     & \textbf{211}        & 0:48:07    & \textbf{267:05:00}      \\
+Capsule    & 27         & \textbf{0:41:38}    & 123:30:00     & \textbf{14}         & 0:41:45    & \textbf{114:50:00}      \\
+Hazelnut   & 83         & \textbf{1:22:12}    & 321:56:00     & \textbf{19}         & 1:25:10    & \textbf{242:43:00}      \\
+Metal nut  & 148        & \textbf{0:25:31}    & 127:10:00     & \textbf{43}         & 0:28:22    & \textbf{91:42:00}       \\
+Pill       & 5          & 0:48:57    & 128:06:00     & \textbf{4}          & \textbf{0:46:54}    & \textbf{121:57:00}      \\
+Screw      & 245        & \textbf{0:40:27}    & 267:01:00     & \textbf{211}        & 0:40:37    & \textbf{245:04:00}      \\
+Toothbrush & 58         & 0:12:19    & 42:55:00      & 58         & \textbf{0:12:10}    & \textbf{42:24:00}       \\
+Transistor & 271        & 0:46:40    & 328:13:00     & \textbf{196}        & \textbf{0:44:59}    & \textbf{260:57:00}      \\
+Zipper     & 5          & \textbf{0:25:59}    & \textbf{67:34:00}      & 5          & 0:34:52    & 90:39:00       \\
 \bottomrule
 \end{tabular}
 }
@@ -183,11 +183,11 @@ Zipper     & 5          & 0:25:59    & 67:34:00      & 5          & 0:34:52    &
 \caption{Best epochs and time taken to finish training}
 \end{table}
 
-\section{Compared to previous work}
+\section{Comparison with previous work}
 
-\textit{How do our results compare to previous work?}
+\textsl{How do our results compare to previous work?}
 
-When we compare our results to the values from the original InTra model by Pirnay et al. \cite{pirnay_inpainting_2021} in table \ref{table:results:pirnay} we see that the performance of our models is worse than the original implementation. The only result that is better is the segmentation for the carpet image type. This was to be expected, since we have omitted some parts of the original InTra model that improved their results.
+When we compare our results those from the original InTra model by Pirnay et al. \cite{pirnay_inpainting_2021} in table \ref{table:results:pirnay} we see that the performance of our models is worse than the original model. The only result that is better is the segmentation for the carpet image type. This was to be expected, since we have omitted some parts of the original InTra model that improved their results. We will discuss those choices in chapter \ref{ch:discussion}.
 
 \begin{table}
 \centering
